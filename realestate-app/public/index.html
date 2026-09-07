@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>나폴길 AI 부동산 툴박스</title>
+<meta name="theme-color" content="#1F3352">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="내 앱 모음 · 부동산 정보사이트 · AI 도구 · 나만의 비서 만들기 · 실거래가 조회 및 계산기">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F1E6; --surface:#FFFFFF; --surface-2:#FBF7EE; --border:#DDD3BD; --border-soft:#E7DFC9;
+    --ink:#1B2233; --ink-soft:#4B5468; --ink-faint:#7B8296;
+    --navy:#1F3352; --navy-deep:#152238; --navy-tint:#E7ECF3;
+    --burgundy:#7D2E3A; --burgundy-soft:#A5525D; --burgundy-tint:#F4E6E7;
+    --gold:#A9812F; --gold-soft:#C9A45C; --gold-tint:#F3EAD2;
+    --good:#4D7A45; --good-bg:#E7EFE4; --bad:#B23A3A; --bad-bg:#F6E4E4;
+    --font-display:'Noto Serif KR', serif; --font-body:'Noto Sans KR', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; padding:0;}
+  body{background:var(--bg); color:var(--ink); font-family:var(--font-body); line-height:1.55; padding-bottom:40px;}
+  h1,h2,h3{font-family:var(--font-display); color:var(--navy); margin:0;}
+  a{color:inherit; text-decoration:none;}
+  input,select,button{font-family:var(--font-body); font-size:14px;}
+
+  header{position:sticky; top:0; z-index:20; background:var(--navy); color:#EDE6D3; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 10px rgba(0,0,0,.15);}
+  header .brand{display:flex; align-items:center; gap:10px;}
+  header .brand b{font-family:var(--font-display); font-size:15px; color:#fff;}
+  header .brand span{font-size:10.5px; color:var(--gold-soft);}
+  #installBtn{display:none; background:var(--gold-soft); color:var(--navy-deep); border:none; border-radius:8px; padding:8px 12px; font-weight:700; font-size:12px; cursor:pointer; flex:0 0 auto;}
+
+  nav.tabs{display:flex; gap:4px; overflow-x:auto; background:var(--surface); border-bottom:1px solid var(--border); padding:8px 10px; position:sticky; top:54px; z-index:19;}
+  nav.tabs button{flex:0 0 auto; border:none; background:var(--surface-2); color:var(--ink-soft); font-weight:700; font-size:12.5px; padding:9px 13px; border-radius:999px; cursor:pointer; border:1px solid var(--border-soft); white-space:nowrap;}
+  nav.tabs button.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+  nav.subtabs{display:flex; gap:4px; overflow-x:auto; padding:0 0 12px;}
+  nav.subtabs button{flex:0 0 auto; border:1px solid var(--border-soft); background:var(--surface-2); color:var(--ink-soft); font-weight:700; font-size:12px; padding:7px 12px; border-radius:999px; cursor:pointer;}
+  nav.subtabs button.active{background:var(--burgundy); color:#fff; border-color:var(--burgundy);}
+
+  main{max-width:720px; margin:0 auto; padding:16px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .subpanel{display:none;}
+  .subpanel.active{display:block;}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:16px;}
+  .card h2{font-size:17px; margin-bottom:4px;}
+  .card .sub{font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;}
+
+  .grid{display:grid; grid-template-columns:1fr; gap:10px;}
+  .link-card{display:flex; flex-direction:column; gap:3px; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:12px; padding:13px 15px;}
+  .link-card .name{font-weight:700; font-size:13.8px; color:var(--navy);}
+  .link-card .url{font-size:11px; color:var(--ink-faint); word-break:break-all;}
+  .link-card .use{font-size:12.3px; color:var(--ink-soft); margin-top:2px;}
+  .link-card .open{align-self:flex-start; margin-top:8px; font-size:11.5px; font-weight:700; color:#fff; background:var(--navy); padding:6px 12px; border-radius:999px;}
+  .section-title{font-size:14px; font-weight:700; color:var(--burgundy); margin:22px 0 10px; padding-top:14px; border-top:1px solid var(--border-soft);}
+  .section-title:first-of-type{margin-top:0; padding-top:0; border-top:none;}
+  .tip{font-size:12px; color:var(--ink-soft); background:var(--gold-tint); border-radius:10px; padding:11px 13px; margin-top:4px;}
+  .compare2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  @media (max-width:420px){.compare2{grid-template-columns:1fr;}}
+  .compare2 .box{border-radius:12px; padding:12px 13px; font-size:12.3px;}
+  .compare2 .box.a{background:var(--navy-tint);}
+  .compare2 .box.b{background:var(--navy); color:#EDE6D3;}
+  .compare2 .box b{display:block; margin-bottom:5px; font-size:13px;}
+
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:12.5px; font-weight:700; color:var(--navy); margin-bottom:5px;}
+  .field input, .field select{width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:9px; background:var(--surface-2); color:var(--ink);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .hint{font-size:11.5px; color:var(--ink-faint); margin-top:4px;}
+  .hint a{color:var(--navy); text-decoration:underline;}
+
+  button.go{width:100%; background:var(--navy); color:#fff; border:none; border-radius:10px; padding:13px; font-weight:700; font-size:14px; cursor:pointer; margin-top:4px;}
+  button.go:active{background:var(--navy-deep);}
+
+  .msg{margin-top:12px; padding:12px 14px; border-radius:10px; font-size:13px;}
+  .msg.err{background:var(--bad-bg); color:var(--bad); font-weight:600;}
+  .msg.ok{background:var(--good-bg); color:var(--good); font-weight:600;}
+  .msg.loading{background:var(--gold-tint); color:var(--gold);}
+
+  .result-item{border:1px solid var(--border-soft); background:var(--surface-2); border-radius:10px; padding:12px 14px; margin-top:10px;}
+  .result-item .t{font-weight:700; color:var(--navy); font-size:13.5px; margin-bottom:4px;}
+  .result-item dl{display:grid; grid-template-columns:auto 1fr; gap:3px 10px; margin:0; font-size:12.5px;}
+  .result-item dt{color:var(--ink-faint);}
+  .result-item dd{margin:0; text-align:right; font-variant-numeric:tabular-nums;}
+
+  .calc-tabs{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap;}
+  .calc-tabs button{flex:1 1 auto; min-width:70px; border:1px solid var(--border-soft); background:var(--surface-2); color:var(--ink-soft); border-radius:9px; padding:9px 6px; font-size:12px; font-weight:700; cursor:pointer;}
+  .calc-tabs button.active{background:var(--burgundy); color:#fff; border-color:var(--burgundy);}
+  .calc-panel{display:none;}
+  .calc-panel.active{display:block;}
+  .disclaimer{font-size:11px; color:var(--ink-faint); background:var(--surface-2); border-radius:8px; padding:8px 10px; margin-top:10px;}
+  .big-result{background:var(--navy); color:#fff; border-radius:12px; padding:16px 18px; margin-top:12px;}
+  .big-result .amt{font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--gold-soft);}
+  .big-result .lbl{font-size:12px; color:#EDE6D3; margin-bottom:4px;}
+  .big-result .breakdown{margin-top:10px; font-size:12px; color:#EDE6D3; display:grid; gap:3px;}
+  .toggle-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;}
+  .toggle-chip{border:1px solid var(--border); background:var(--surface-2); color:var(--ink-soft); border-radius:999px; padding:7px 13px; font-size:12px; font-weight:700; cursor:pointer;}
+  .toggle-chip.active{background:var(--gold-soft); color:var(--navy-deep); border-color:var(--gold-soft);}
+
+  footer{max-width:720px; margin:20px auto 0; padding:0 16px; font-size:11px; color:var(--ink-faint); text-align:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><b>🏠 나폴길 AI 부동산 툴박스</b><span>내 앱 · 정보사이트 · AI도구 · 비서만들기 · 실거래가</span></div>
+  <button id="installBtn">홈 화면에 추가</button>
+</header>
+
+<nav class="tabs" id="mainTabs">
+  <button class="active" data-panel="p-apps">나의 앱</button>
+  <button data-panel="p-sites">정보사이트</button>
+  <button data-panel="p-ai">AI 도구</button>
+  <button data-panel="p-assistant">비서 만들기</button>
+  <button data-panel="p-lookup">실거래가·계산기</button>
+</nav>
+
+<main>
+  <!-- 나의 앱 -->
+  <section class="panel active" id="p-apps">
+    <div class="card">
+      <h2>귀찮니즘이 만든 결과</h2>
+      <p class="sub">반복되는 업무가 귀찮아서 직접 만든 도구들입니다. 눌러서 바로 열어보세요.</p>
+      <div class="grid">
+        <a class="link-card" href="https://land3lab.github.io/mrhomesga/callnote/" target="_blank" rel="noopener">
+          <span class="name">매통이</span><span class="url">land3lab.github.io/mrhomesga</span>
+          <span class="use">매물 정보를 한 화면에서 수집·정리하는 도구</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://rsar-land3-jaeturi.ktma9028.workers.dev/" target="_blank" rel="noopener">
+          <span class="name">재투리</span><span class="url">rsar-land3-jaeturi.ktma9028.workers.dev</span>
+          <span class="use">재건축 고시·공고·뉴스를 추적하는 보조 도구</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://maejjigi-field.kilmoonsoo.chatgpt.site/" target="_blank" rel="noopener">
+          <span class="name">매찍이</span><span class="url">maejjigi-field.kilmoonsoo.chatgpt.site</span>
+          <span class="use">현장 매물 정보를 빠르게 기록·정리하는 도구</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://brieffing.vercel.app/login?redirect=%2F" target="_blank" rel="noopener">
+          <span class="name">엄선한관악ZIP</span><span class="url">brieffing.vercel.app</span>
+          <span class="use">관악센터가 엄선한 매물을 모아보는 큐레이션 서비스</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://content-creator-ai-psi.vercel.app" target="_blank" rel="noopener">
+          <span class="name">콘텐츠AI</span><span class="url">content-creator-ai-psi.vercel.app</span>
+          <span class="use">카드뉴스·광고문구 등을 AI로 자동 생성하는 SaaS</span><span class="open">열기 ↗</span>
+        </a>
+      </div>
+      <div class="tip">💡 링크 이름·설명이 다르면 언제든 말씀해주세요 — 바로 수정해드립니다.</div>
+    </div>
+  </section>
+
+  <!-- 정보사이트 -->
+  <section class="panel" id="p-sites">
+    <div class="card">
+      <h2>부동산 정보 사이트 이모저모</h2>
+      <p class="sub">가치평가·시세추정·사업성 검토에 쓰는 프롭테크 플랫폼 모음입니다.</p>
+      <div class="grid">
+        <a class="link-card" href="https://flexity.app/" target="_blank" rel="noopener">
+          <span class="name">플렉시티 (Flexity)</span><span class="url">flexity.app</span>
+          <span class="use">AI·빅데이터 기반 부동산 자동 기획설계·사업성 검토</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://valueshopping.land/" target="_blank" rel="noopener">
+          <span class="name">밸류쇼핑</span><span class="url">valueshopping.land</span>
+          <span class="use">전국 아파트 등 부동산 시세·실거래가 조회·가격분석</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.landvisor.net/" target="_blank" rel="noopener">
+          <span class="name">랜드바이저</span><span class="url">landvisor.net</span>
+          <span class="use">감정평가법인이 운영하는 토지·건물 시세 추정 서비스</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://valueofspace.com/" target="_blank" rel="noopener">
+          <span class="name">공간의가치</span><span class="url">valueofspace.com</span>
+          <span class="use">AI 기반 부동산 자동가치평가(AVM) 플랫폼</span><span class="open">열기 ↗</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI 도구 -->
+  <section class="panel" id="p-ai">
+    <div class="card">
+      <h2>AI 툴과 프롬프트</h2>
+      <p class="sub">업무에 바로 쓸 수 있는 AI 도구 모음과, 좋은 결과를 얻기 위한 질문법입니다.</p>
+      <div class="grid">
+        <a class="link-card" href="https://chatgpt.com/" target="_blank" rel="noopener"><span class="name">챗지피티 (ChatGPT)</span><span class="url">chatgpt.com</span><span class="use">가장 널리 쓰이는 대화형 AI — 커스텀 GPTs 제작 가능</span><span class="open">열기 ↗</span></a>
+        <a class="link-card" href="https://gemini.google.com/" target="_blank" rel="noopener"><span class="name">제미나이 (Gemini)</span><span class="url">gemini.google.com</span><span class="use">구글 계정 연동, 이미지·문서 분석에 강함 — Gem 제작 가능</span><span class="open">열기 ↗</span></a>
+        <a class="link-card" href="https://claude.ai/" target="_blank" rel="noopener"><span class="name">클로드 (Claude)</span><span class="url">claude.ai</span><span class="use">긴 문서·표 요약에 강함 — Projects로 자료 모아두고 대화</span><span class="open">열기 ↗</span></a>
+        <a class="link-card" href="https://www.perplexity.ai/" target="_blank" rel="noopener"><span class="name">퍼플렉시티 (Perplexity)</span><span class="url">perplexity.ai</span><span class="use">실시간 웹 검색 기반 리서치·답변 엔진</span><span class="open">열기 ↗</span></a>
+        <a class="link-card" href="https://www.genspark.ai/" target="_blank" rel="noopener"><span class="name">젠스파크 (Genspark)</span><span class="url">genspark.ai</span><span class="use">검색·문서·슬라이드 생성까지 되는 올인원 AI 워크스페이스</span><span class="open">열기 ↗</span></a>
+        <a class="link-card" href="https://notebook.google/" target="_blank" rel="noopener"><span class="name">Gemini Notebook (구 노트북LM)</span><span class="url">notebook.google</span><span class="use">업로드한 자료 기반 AI 요약·리서치·팟캐스트 생성</span><span class="open">열기 ↗</span></a>
+        <a class="link-card" href="https://suno.com/" target="_blank" rel="noopener"><span class="name">수노 (Suno)</span><span class="url">suno.com</span><span class="use">텍스트 프롬프트로 완성곡(가사+보컬+반주)을 만드는 AI 음악</span><span class="open">열기 ↗</span></a>
+        <a class="link-card" href="https://vrew.ai/ko/" target="_blank" rel="noopener"><span class="name">브루 (Vrew)</span><span class="url">vrew.ai</span><span class="use">자막·음성 인식 기반 AI 영상 편집 프로그램</span><span class="open">열기 ↗</span></a>
+      </div>
+
+      <div class="section-title">좋은 프롬프트 만드는 법</div>
+      <div class="grid">
+        <div class="link-card"><span class="name">① 역할을 부여하라</span><span class="use">"너는 부동산 중개 전문가야" — 답변의 관점과 전문성이 달라집니다</span></div>
+        <div class="link-card"><span class="name">② 맥락과 목적을 알려줘라</span><span class="use">누구를 위한 것인지, 무엇에 쓸 것인지 밝히면 결과가 구체적으로 바뀝니다</span></div>
+        <div class="link-card"><span class="name">③ 원하는 형식을 지정하라</span><span class="use">"표로", "3줄 요약으로", "카드뉴스용 문구로" 등 출력 형태를 못박습니다</span></div>
+        <div class="link-card"><span class="name">④ 근거·출처를 요구하라</span><span class="use">"출처와 기준일을 함께 표시해줘"라고 덧붙이면 검증이 쉬워집니다</span></div>
+      </div>
+      <div class="tip">💡 <b>스킬(Skill)</b>이란 자주 쓰는 작업 지침을 미리 저장해두고 필요할 때 AI가 자동으로 불러 쓰는 "재사용 가능한 매뉴얼"입니다. 매번 같은 설명을 반복하지 않아도 됩니다.</div>
+    </div>
+  </section>
+
+  <!-- 비서 만들기 -->
+  <section class="panel" id="p-assistant">
+    <div class="card">
+      <h2>나만의 비서 만들기</h2>
+      <p class="sub">한 번 설계해두면 매번 같은 규칙으로 답해주는 "전담 AI"를 만드는 네 가지 방법입니다.</p>
+
+      <div class="section-title">GPTs (ChatGPT)</div>
+      <div class="compare2">
+        <div class="box a"><b>일반 ChatGPT</b>질문마다 역할·형식을 다시 설명해야 함</div>
+        <div class="box b"><b>커스텀 GPT</b>지침·자료를 저장해두고 부를 때마다 자동 적용</div>
+      </div>
+      <a class="link-card" style="margin-top:10px;" href="https://chatgpt.com/gpts/editor" target="_blank" rel="noopener"><span class="name">GPT 만들기 열기</span><span class="url">chatgpt.com/gpts/editor</span><span class="open">열기 ↗</span></a>
+
+      <div class="section-title">Gems (Gemini)</div>
+      <div class="compare2">
+        <div class="box a"><b>일반 제미나이</b>매번 지역·목적·형식을 새로 설명</div>
+        <div class="box b"><b>젬(Gem)</b>내가 정한 규칙을 따르는 전담 비서</div>
+      </div>
+      <a class="link-card" style="margin-top:10px;" href="https://gemini.google.com/gems/view" target="_blank" rel="noopener"><span class="name">Gem 만들기 열기</span><span class="url">gemini.google.com/gems/view</span><span class="open">열기 ↗</span></a>
+
+      <div class="section-title">Gemini Notebook (구 노트북LM)</div>
+      <div class="link-card"><span class="name">자료 기반 전담 리서처</span><span class="use">내가 올린 자료(계약서·보고서·법령)만 근거로 답하게 만들 수 있어 환각(허위정보) 위험이 낮습니다</span></div>
+
+      <div class="section-title">Projects (Claude)</div>
+      <div class="link-card"><span class="name">자료 모음 + 대화</span><span class="use">관련 문서·양식을 프로젝트에 모아두면 매번 첨부하지 않아도 그 맥락 위에서 대화가 이어집니다</span></div>
+
+      <div class="tip">💡 네 가지 모두 핵심은 같습니다 — <b>①역할·대상 ②할 일 ③답변 순서 ④안전장치(출처·확인필요 표시)</b>를 지침에 명확히 적어두는 것입니다.</div>
+    </div>
+  </section>
+
+  <!-- 실거래가·계산기 -->
+  <section class="panel" id="p-lookup">
+    <nav class="subtabs" id="lookupSubtabs">
+      <button class="active" data-sub="s-trade">실거래가</button>
+      <button data-sub="s-building">건축물대장</button>
+      <button data-sub="s-land">토지·공시지가</button>
+      <button data-sub="s-calc">계산기</button>
+    </nav>
+
+    <div class="subpanel active" id="s-trade">
+      <div class="card">
+        <h2>아파트 매매 실거래가</h2>
+        <p class="sub">국토교통부 실거래가 공개시스템 원자료 · 지역·계약년월 기준으로 조회합니다.</p>
+        <div class="field"><label>지역</label><select id="tradeRegion"></select></div>
+        <div class="field"><label>계약년월</label><input type="month" id="tradeYm"></div>
+        <div class="field"><label>단지명 검색 (선택)</label><input type="text" id="tradeKeyword" placeholder="예: 래미안, 자이 — 비워두면 전체"></div>
+        <button class="go" id="tradeGo">조회하기</button>
+        <div id="tradeMsg"></div>
+        <div id="tradeResults"></div>
+      </div>
+    </div>
+
+    <div class="subpanel" id="s-building">
+      <div class="card">
+        <h2>건축물대장 표제부</h2>
+        <p class="sub">건축HUB 공공데이터 · 시군구·법정동코드·지번으로 조회합니다.</p>
+        <div class="field"><label>시군구</label><select id="bldRegion"></select></div>
+        <div class="row2">
+          <div class="field"><label>법정동코드 (5자리)</label><input type="text" id="bldDong" placeholder="예: 10600" maxlength="5" inputmode="numeric"></div>
+          <div class="field"><label>산 여부</label><select id="bldMountain"><option value="0">대지</option><option value="1">산</option></select></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>번지(본번)</label><input type="text" id="bldBun" placeholder="예: 123" inputmode="numeric"></div>
+          <div class="field"><label>번지(부번, 선택)</label><input type="text" id="bldJi" placeholder="예: 4" inputmode="numeric"></div>
+        </div>
+        <p class="hint">법정동코드를 모르시면 <a href="https://www.code.go.kr/stdcode/regCodeL.do" target="_blank" rel="noopener">행정표준코드관리시스템</a>에서 검색하세요.</p>
+        <button class="go" id="bldGo">조회하기</button>
+        <div id="bldMsg"></div>
+        <div id="bldResults"></div>
+      </div>
+    </div>
+
+    <div class="subpanel" id="s-land">
+      <div class="card">
+        <h2>토지 특성 · 개별공시지가</h2>
+        <p class="sub">이 항목은 국가공간정보포털(NSDI)의 별도 인증키가 필요해 지금 발급받으신 공공데이터포털 키로는 실시간 자동조회가 되지 않습니다. 대신 아래 공식 사이트에서 바로 열람하실 수 있습니다.</p>
+        <div class="grid">
+          <a class="link-card" href="https://www.realtyprice.kr/notice/town/siteLink.htm" target="_blank" rel="noopener">
+            <span class="name">부동산공시가격 알리미</span><span class="url">realtyprice.kr</span>
+            <span class="use">주소로 개별공시지가·개별주택가격을 바로 열람</span><span class="open">열기 ↗</span>
+          </a>
+          <a class="link-card" href="https://www.gov.kr/mw/AA020InfoCappView.do?HighCtgCD=A02011&amp;CappBizCD=13100000015" target="_blank" rel="noopener">
+            <span class="name">토지대장 발급 (정부24)</span><span class="url">gov.kr</span>
+            <span class="use">지목·면적 등이 담긴 토지대장을 정식 발급·열람</span><span class="open">열기 ↗</span>
+          </a>
+        </div>
+        <div class="tip">💡 자동조회를 원하시면 국가공간정보포털(nsdi.go.kr)에서 별도 API 키를 발급받아 알려주세요 — 바로 연동해드리겠습니다.</div>
+      </div>
+    </div>
+
+    <div class="subpanel" id="s-calc">
+      <div class="card">
+        <h2>부동산 계산기</h2>
+        <p class="sub">간이 계산기입니다 — 실제 세액·수수료는 개인 상황(감면·중과·지역 조례 등)에 따라 달라질 수 있으니 참고용으로만 사용하세요.</p>
+        <div class="calc-tabs" id="calcTabs">
+          <button class="active" data-calc="c-acq">취득세</button>
+          <button data-calc="c-fee">중개보수</button>
+          <button data-calc="c-cgt">양도세</button>
+          <button data-calc="c-comp">종부세</button>
+        </div>
+
+        <div class="calc-panel active" id="c-acq">
+          <div class="field"><label>취득가액 (만원)</label><input type="number" id="acqPrice" placeholder="예: 65000"></div>
+          <div class="field"><label>전용면적 (㎡)</label><input type="number" id="acqArea" placeholder="예: 84.9"></div>
+          <div class="toggle-row" id="acqHouseCount">
+            <button class="toggle-chip active" data-v="1">1주택</button>
+            <button class="toggle-chip" data-v="2">2주택</button>
+            <button class="toggle-chip" data-v="3">3주택+</button>
+            <button class="toggle-chip" data-v="corp">법인</button>
+          </div>
+          <div class="toggle-row" id="acqAdjusted">
+            <button class="toggle-chip active" data-v="0">비조정대상지역</button>
+            <button class="toggle-chip" data-v="1">조정대상지역</button>
+          </div>
+          <button class="go" onclick="calcAcquisition()">계산하기</button>
+          <div id="acqResult"></div>
+        </div>
+
+        <div class="calc-panel" id="c-fee">
+          <div class="toggle-row" id="feeType">
+            <button class="toggle-chip active" data-v="sale">매매·교환</button>
+            <button class="toggle-chip" data-v="lease">임대차(전월세)</button>
+          </div>
+          <div class="field" id="feeSalePriceField"><label>거래금액 (만원)</label><input type="number" id="feeSalePrice" placeholder="예: 65000"></div>
+          <div class="row2" id="feeLeaseFields" style="display:none;">
+            <div class="field"><label>보증금 (만원)</label><input type="number" id="feeDeposit" placeholder="예: 30000"></div>
+            <div class="field"><label>월세 (만원, 없으면 0)</label><input type="number" id="feeMonthly" placeholder="예: 0"></div>
+          </div>
+          <button class="go" onclick="calcFee()">계산하기</button>
+          <div id="feeResult"></div>
+        </div>
+
+        <div class="calc-panel" id="c-cgt">
+          <div class="row2">
+            <div class="field"><label>양도가액 (만원)</label><input type="number" id="cgtSell" placeholder="예: 90000"></div>
+            <div class="field"><label>취득가액 (만원)</label><input type="number" id="cgtBuy" placeholder="예: 60000"></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>필요경비 (만원)</label><input type="number" id="cgtExpense" placeholder="예: 500"></div>
+            <div class="field"><label>보유기간 (년)</label><input type="number" id="cgtYears" placeholder="예: 5"></div>
+          </div>
+          <div class="toggle-row" id="cgtOnehouse">
+            <button class="toggle-chip active" data-v="0">일반과세</button>
+            <button class="toggle-chip" data-v="1">1세대1주택(12억 초과분만 과세)</button>
+          </div>
+          <button class="go" onclick="calcCGT()">계산하기</button>
+          <div id="cgtResult"></div>
+        </div>
+
+        <div class="calc-panel" id="c-comp">
+          <div class="field"><label>보유주택 공시가격 합산 (만원)</label><input type="number" id="compPrice" placeholder="예: 150000"></div>
+          <div class="toggle-row" id="compOnehouse">
+            <button class="toggle-chip active" data-v="1">1세대1주택자 (공제 12억)</button>
+            <button class="toggle-chip" data-v="0">그 외 (공제 9억)</button>
+          </div>
+          <button class="go" onclick="calcComp()">계산하기</button>
+          <div id="compResult"></div>
+        </div>
+
+        <div class="disclaimer">※ 위 계산기는 표준세율·표준요율 기준의 간이 추정치이며, 감면·중과·특례·지역별 조례를 반영하지 않습니다. 실제 신고·거래 전 반드시 세무사·중개사와 상담하세요.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>나폴길 · Land3 Lab — 공공데이터포털 Open API 기반</footer>
+
+<script>
+// ---------------- tabs ----------------
+document.querySelectorAll('#mainTabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#mainTabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('main > .panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById(btn.dataset.panel).classList.add('active');
+  });
+});
+document.querySelectorAll('#lookupSubtabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#lookupSubtabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#p-lookup .subpanel').forEach(p=>p.classList.remove('active'));
+    document.getElementById(btn.dataset.sub).classList.add('active');
+  });
+});
+document.querySelectorAll('#calcTabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#calcTabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.calc-panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById(btn.dataset.calc).classList.add('active');
+  });
+});
+document.querySelectorAll('.toggle-row').forEach(row=>{
+  row.addEventListener('click', (e)=>{
+    if(e.target.classList.contains('toggle-chip')){
+      row.querySelectorAll('.toggle-chip').forEach(c=>c.classList.remove('active'));
+      e.target.classList.add('active');
+    }
+  });
+});
+document.getElementById('feeType').addEventListener('click', (e)=>{
+  if(!e.target.classList.contains('toggle-chip')) return;
+  const isLease = e.target.dataset.v === 'lease';
+  document.getElementById('feeSalePriceField').style.display = isLease ? 'none' : '';
+  document.getElementById('feeLeaseFields').style.display = isLease ? 'grid' : 'none';
+});
+function activeChip(rowId){ return document.querySelector('#'+rowId+' .toggle-chip.active').dataset.v; }
+function fmtWon(manwon){ return Math.round(manwon).toLocaleString('ko-KR') + '만원'; }
+
+// ---------------- region data ----------------
+const REGIONS = [
+  ["11110","서울 종로구"],["11140","서울 중구"],["11170","서울 용산구"],["11200","서울 성동구"],
+  ["11215","서울 광진구"],["11230","서울 동대문구"],["11260","서울 중랑구"],["11290","서울 성북구"],
+  ["11305","서울 강북구"],["11320","서울 도봉구"],["11350","서울 노원구"],["11380","서울 은평구"],
+  ["11410","서울 서대문구"],["11440","서울 마포구"],["11470","서울 양천구"],["11500","서울 강서구"],
+  ["11530","서울 구로구"],["11545","서울 금천구"],["11560","서울 영등포구"],["11590","서울 동작구"],
+  ["11620","서울 관악구"],["11650","서울 서초구"],["11680","서울 강남구"],["11710","서울 송파구"],
+  ["11740","서울 강동구"],
+  ["41111","수원 장안구"],["41113","수원 권선구"],["41115","수원 팔달구"],["41117","수원 영통구"],
+  ["45090","나주시"],["41630","양주시"],
+];
+function fillRegionSelect(id){
+  const sel = document.getElementById(id);
+  REGIONS.forEach(([code,name])=>{
+    const o = document.createElement('option');
+    o.value = code; o.textContent = `${name} (${code})`;
+    sel.appendChild(o);
+  });
+}
+['tradeRegion','bldRegion'].forEach(fillRegionSelect);
+(function(){
+  const d = new Date();
+  document.getElementById('tradeYm').value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+})();
+
+// ---------------- API calls ----------------
+async function callApi(url, msgEl, resultsEl, render){
+  msgEl.innerHTML = '<div class="msg loading">조회 중입니다…</div>';
+  resultsEl.innerHTML = '';
+  try{
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if(!data.ok){ msgEl.innerHTML = '<div class="msg err">오류: ' + (data.error || '알 수 없는 오류') + '</div>'; return; }
+    if(!data.items || data.items.length === 0){ msgEl.innerHTML = '<div class="msg err">조건에 맞는 결과가 없습니다. 지역·기간·번지를 다시 확인해주세요.</div>'; return; }
+    msgEl.innerHTML = '<div class="msg ok">' + data.items.length + '건 조회됨</div>';
+    render(data.items);
+  }catch(e){ msgEl.innerHTML = '<div class="msg err">네트워크 오류: ' + e.message + '</div>'; }
+}
+
+document.getElementById('tradeGo').addEventListener('click', ()=>{
+  const region = document.getElementById('tradeRegion').value;
+  const ym = document.getElementById('tradeYm').value;
+  if(!region || !ym){ document.getElementById('tradeMsg').innerHTML='<div class="msg err">지역과 계약년월을 선택하세요.</div>'; return; }
+  const dealYmd = ym.replace('-','');
+  const keyword = encodeURIComponent(document.getElementById('tradeKeyword').value || '');
+  const url = `/api/apt-trade?lawdCd=${region}&dealYmd=${dealYmd}&keyword=${keyword}`;
+  callApi(url, document.getElementById('tradeMsg'), document.getElementById('tradeResults'), (items)=>{
+    document.getElementById('tradeResults').innerHTML = items.slice(0,100).map(it => `
+      <div class="result-item">
+        <div class="t">${it.아파트 || '(단지명 없음)'} · ${it.법정동 || ''} ${it.지번 || ''}</div>
+        <dl>
+          <dt>거래금액</dt><dd>${Number(it.거래금액||0).toLocaleString('ko-KR')}만원</dd>
+          <dt>전용면적</dt><dd>${it.전용면적 || '-'}㎡</dd>
+          <dt>층</dt><dd>${it.층 || '-'}층</dd>
+          <dt>건축년도</dt><dd>${it.건축년도 || '-'}년</dd>
+          <dt>계약일</dt><dd>${it.년}.${it.월}.${it.일}</dd>
+        </dl>
+      </div>`).join('');
+  });
+});
+
+document.getElementById('bldGo').addEventListener('click', ()=>{
+  const sigunguCd = document.getElementById('bldRegion').value;
+  const bjdongCd = document.getElementById('bldDong').value.trim();
+  const bun = document.getElementById('bldBun').value.trim();
+  const ji = document.getElementById('bldJi').value.trim();
+  const mountain = document.getElementById('bldMountain').value;
+  if(!sigunguCd || !bjdongCd || !bun){ document.getElementById('bldMsg').innerHTML='<div class="msg err">시군구, 법정동코드, 번지(본번)를 입력하세요.</div>'; return; }
+  const url = `/api/building?sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&mountain=${mountain}`;
+  callApi(url, document.getElementById('bldMsg'), document.getElementById('bldResults'), (items)=>{
+    document.getElementById('bldResults').innerHTML = items.map(it => `
+      <div class="result-item">
+        <div class="t">${it.건물명}</div>
+        <dl>
+          <dt>대지위치</dt><dd>${it.대지위치 || '-'}</dd>
+          <dt>주용도</dt><dd>${it.주용도 || '-'}</dd>
+          <dt>구조</dt><dd>${it.구조 || '-'}</dd>
+          <dt>층수</dt><dd>지상 ${it.지상층수||'-'} / 지하 ${it.지하층수||'-'}</dd>
+          <dt>연면적</dt><dd>${it.연면적||'-'}㎡</dd>
+          <dt>대지면적</dt><dd>${it.대지면적||'-'}㎡</dd>
+          <dt>건폐율/용적률</dt><dd>${it.건폐율||'-'}% / ${it.용적률||'-'}%</dd>
+          <dt>세대수</dt><dd>${it.세대수||'-'}</dd>
+          <dt>사용승인일</dt><dd>${it.사용승인일||'-'}</dd>
+        </dl>
+      </div>`).join('');
+  });
+});
+
+// ---------------- calculators ----------------
+function calcAcquisition(){
+  const price = Number(document.getElementById('acqPrice').value || 0);
+  const area = Number(document.getElementById('acqArea').value || 0);
+  const houseCount = activeChip('acqHouseCount');
+  const adjusted = activeChip('acqAdjusted') === '1';
+  if(!price){ document.getElementById('acqResult').innerHTML = '<div class="msg err">취득가액을 입력하세요.</div>'; return; }
+  let rate;
+  if(houseCount === '1'){
+    if(price <= 60000) rate = 1;
+    else if(price <= 90000) rate = Math.round(((price/10000)*2/3 - 3) * 1000) / 1000;
+    else rate = 3;
+  } else if(houseCount === '2'){
+    rate = adjusted ? 8 : (price <= 60000 ? 1 : price <= 90000 ? Math.round(((price/10000)*2/3 - 3)*1000)/1000 : 3);
+  } else if(houseCount === '3'){
+    rate = adjusted ? 12 : 8;
+  } else { rate = 12; }
+  const acqTax = price * rate / 100;
+  const localEduTax = acqTax * 0.1;
+  const ruralTax = area > 85 ? price * 0.2/100 : 0;
+  const total = acqTax + localEduTax + ruralTax;
+  document.getElementById('acqResult').innerHTML = `
+    <div class="big-result">
+      <div class="lbl">예상 총 납부세액 (취득세+지방교육세+농특세)</div>
+      <div class="amt">${fmtWon(total)}</div>
+      <div class="breakdown">
+        <div>취득세 (세율 ${rate}%) — ${fmtWon(acqTax)}</div>
+        <div>지방교육세 — ${fmtWon(localEduTax)}</div>
+        <div>농어촌특별세 — ${fmtWon(ruralTax)}</div>
+      </div>
+    </div>`;
+}
+
+function calcFee(){
+  const type = activeChip('feeType');
+  const resultEl = document.getElementById('feeResult');
+  let base, rate, cap, label;
+  if(type === 'sale'){
+    const price = Number(document.getElementById('feeSalePrice').value || 0);
+    if(!price){ resultEl.innerHTML = '<div class="msg err">거래금액을 입력하세요.</div>'; return; }
+    base = price;
+    if(price < 5000){ rate=0.6; cap=25; }
+    else if(price < 20000){ rate=0.5; cap=80; }
+    else if(price < 90000){ rate=0.4; cap=null; }
+    else if(price < 120000){ rate=0.5; cap=null; }
+    else if(price < 150000){ rate=0.6; cap=null; }
+    else { rate=0.7; cap=null; }
+    label = '매매·교환';
+  } else {
+    const deposit = Number(document.getElementById('feeDeposit').value || 0);
+    const monthly = Number(document.getElementById('feeMonthly').value || 0);
+    base = deposit + monthly*100;
+    if(!base){ resultEl.innerHTML = '<div class="msg err">보증금(환산보증금)을 입력하세요.</div>'; return; }
+    if(base < 5000){ rate=0.5; cap=20; }
+    else if(base < 10000){ rate=0.4; cap=30; }
+    else if(base < 60000){ rate=0.3; cap=null; }
+    else if(base < 120000){ rate=0.4; cap=null; }
+    else if(base < 150000){ rate=0.5; cap=null; }
+    else { rate=0.6; cap=null; }
+    label = '임대차(환산보증금 기준)';
+  }
+  let fee = base * rate / 100;
+  if(cap !== null) fee = Math.min(fee, cap);
+  resultEl.innerHTML = `
+    <div class="big-result">
+      <div class="lbl">예상 중개보수 상한액 (${label}, 서울시 기준)</div>
+      <div class="amt">${fmtWon(fee)}</div>
+      <div class="breakdown"><div>적용요율 ${rate}%${cap!==null? ' · 한도액 '+cap+'만원':''}</div><div>부가세(중개보수의 10%)는 별도입니다</div></div>
+    </div>`;
+}
+
+function calcCGT(){
+  const sell = Number(document.getElementById('cgtSell').value || 0);
+  const buy = Number(document.getElementById('cgtBuy').value || 0);
+  const expense = Number(document.getElementById('cgtExpense').value || 0);
+  const years = Number(document.getElementById('cgtYears').value || 0);
+  const oneHouse = activeChip('cgtOnehouse') === '1';
+  const resultEl = document.getElementById('cgtResult');
+  if(!sell || !buy){ resultEl.innerHTML = '<div class="msg err">양도가액과 취득가액을 입력하세요.</div>'; return; }
+  let gain = sell - buy - expense;
+  let taxableGain = gain;
+  let note = '';
+  if(oneHouse){
+    if(sell <= 120000){
+      resultEl.innerHTML = `<div class="big-result"><div class="lbl">예상 양도소득세</div><div class="amt">0원</div>
+        <div class="breakdown"><div>1세대1주택 비과세 요건 충족 시 양도가액 12억원 이하분은 비과세입니다 (2년 이상 보유·거주 등 요건 별도 확인 필요)</div></div></div>`;
+      return;
+    }
+    taxableGain = gain * (sell - 120000) / sell;
+    note = '(12억원 초과분만 과세하는 고가주택 특례 적용)';
+  }
+  const ltHold = Math.min(years >= 3 ? (years*2) : 0, 30);
+  const deduction = taxableGain * ltHold / 100;
+  const base = Math.max(0, taxableGain - deduction - 250);
+  const brackets = [[1400,6,0],[5000,15,126],[8800,24,576],[15000,35,1544],[30000,38,1994],[50000,40,2594],[100000,42,3594],[Infinity,45,6594]];
+  let rate=6, deduct=0;
+  for(const [limit, r, d] of brackets){ if(base <= limit){ rate=r; deduct=d; break; } }
+  const calcTax = Math.max(0, base * rate/100 - deduct);
+  const localTax = calcTax * 0.1;
+  const total = calcTax + localTax;
+  resultEl.innerHTML = `
+    <div class="big-result">
+      <div class="lbl">예상 총 납부세액 (양도소득세+지방소득세) ${note}</div>
+      <div class="amt">${fmtWon(total)}</div>
+      <div class="breakdown">
+        <div>양도차익 ${fmtWon(gain)} · 과세대상차익 ${fmtWon(taxableGain)}</div>
+        <div>장기보유특별공제 ${ltHold}% (${fmtWon(deduction)}) · 기본공제 250만원</div>
+        <div>과세표준 ${fmtWon(base)} · 세율 ${rate}%</div>
+        <div>양도소득세 ${fmtWon(calcTax)} + 지방소득세 ${fmtWon(localTax)}</div>
+      </div>
+    </div>`;
+}
+
+function calcComp(){
+  const price = Number(document.getElementById('compPrice').value || 0);
+  const oneHouse = activeChip('compOnehouse') === '1';
+  const resultEl = document.getElementById('compResult');
+  if(!price){ resultEl.innerHTML = '<div class="msg err">공시가격 합산액을 입력하세요.</div>'; return; }
+  const deduction = oneHouse ? 120000 : 90000;
+  const excess = Math.max(0, price - deduction);
+  const base = excess * 0.6;
+  const brackets = [[30000,0.5,0],[60000,0.7,60],[120000,1.0,240],[250000,1.3,600],[500000,1.5,1100],[9400000,2.0,3600],[Infinity,2.7,10100]];
+  let rate=0.5, deduct=0;
+  for(const [limit, r, d] of brackets){ if(base <= limit){ rate=r; deduct=d; break; } }
+  const compTax = Math.max(0, base * rate/100 - deduct);
+  const ruralTax = compTax * 0.2;
+  const total = compTax + ruralTax;
+  resultEl.innerHTML = `
+    <div class="big-result">
+      <div class="lbl">예상 총 납부세액 (종합부동산세+농특세)</div>
+      <div class="amt">${fmtWon(total)}</div>
+      <div class="breakdown">
+        <div>공제금액 ${fmtWon(deduction)} 적용 후 초과분 ${fmtWon(excess)}</div>
+        <div>과세표준(공정시장가액비율 60%) ${fmtWon(base)} · 세율 ${rate}%</div>
+        <div>종합부동산세 ${fmtWon(compTax)} + 농어촌특별세 ${fmtWon(ruralTax)}</div>
+      </div>
+    </div>`;
+}
+
+// ---------------- PWA install ----------------
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('/sw.js').catch(()=>{}); });
+}
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBtn').style.display = 'inline-block';
+});
+document.getElementById('installBtn').addEventListener('click', async ()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBtn').style.display = 'none';
+});
+</script>
+</body>
+</html>
