@@ -1,9 +1,18 @@
-const { fetchDataGoKr, sendJson } = require("./_util");
-
 // 국토교통부_아파트매매 실거래자료 (RTMSDataSvcAptTradeDev)
 const BASE = "http://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev";
 
 module.exports = async (req, res) => {
+  // require를 핸들러 안(try 블록)에서 지연 로드한다 — 모듈 로드 시점 오류까지 우리 catch가
+  // 잡아 항상 유효한 JSON으로 응답을 끝맺기 위함 (그렇지 않으면 Vercel이 자체 HTML 오류
+  // 페이지를 돌려줘서 브라우저에서 JSON 파싱이 깨진다).
+  let fetchDataGoKr, sendJson;
+  try {
+    ({ fetchDataGoKr, sendJson } = require("./_util"));
+  } catch (loadErr) {
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.status(500).send(JSON.stringify({ ok: false, error: "서버 모듈 로드 오류: " + String((loadErr && loadErr.message) || loadErr) }));
+    return;
+  }
   try {
     const { lawdCd, dealYmd, keyword } = req.query;
     if (!lawdCd || !dealYmd) {
