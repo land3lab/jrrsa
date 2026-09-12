@@ -461,17 +461,40 @@ function fillRegionSelect(id){
 })();
 
 // ---------------- API calls ----------------
-async function callApi(url, msgEl, resultsEl, render){
+// data.go.kr 서버리스 함수가 콜드스타트 등으로 가끔 JSON이 아닌 응답(에러 페이지)을 줄 때가
+// 있어, resp.json()을 바로 쓰지 않고 텍스트로 받아 직접 파싱해서 실패 시 친절한 메시지를 보여준다.
+// 또한 fetch() 자체가 네트워크 문제로 실패("Failed to fetch")하면 한 번 조용히 재시도한다.
+async function safeFetchJson(url, _retried){
+  let resp;
+  try{
+    resp = await fetch(url);
+  }catch(networkErr){
+    if(!_retried){
+      await new Promise(r=>setTimeout(r, 1000));
+      return safeFetchJson(url, true);
+    }
+    throw new Error('네트워크 연결에 문제가 있는 것 같아요 — 와이파이/데이터 상태를 확인하고 다시 시도해주세요.');
+  }
+  const text = await resp.text();
+  let data;
+  try{ data = JSON.parse(text); }
+  catch(e){ throw new Error('일시적인 서버 오류입니다 — 잠시 후 조회하기를 다시 눌러주세요.'); }
+  return data;
+}
+function retryHint(msgEl, retryBtnId){
+  return ' <button type="button" style="margin-left:6px; border:none; background:var(--navy); color:#fff; border-radius:999px; padding:4px 11px; font-size:11.5px; font-weight:700; cursor:pointer;" onclick="document.getElementById(\'' + retryBtnId + '\').click()">다시 시도</button>';
+}
+
+async function callApi(url, msgEl, resultsEl, render, retryBtnId){
   msgEl.innerHTML = '<div class="msg loading">조회 중입니다…</div>';
   resultsEl.innerHTML = '';
   try{
-    const resp = await fetch(url);
-    const data = await resp.json();
+    const data = await safeFetchJson(url);
     if(!data.ok){ msgEl.innerHTML = '<div class="msg err">오류: ' + (data.error || '알 수 없는 오류') + '</div>'; return; }
     if(!data.items || data.items.length === 0){ msgEl.innerHTML = '<div class="msg err">조건에 맞는 결과가 없습니다. 지역·기간·번지를 다시 확인해주세요.</div>'; return; }
     msgEl.innerHTML = '<div class="msg ok">' + data.items.length + '건 조회됨</div>';
     render(data.items);
-  }catch(e){ msgEl.innerHTML = '<div class="msg err">네트워크 오류: ' + e.message + '</div>'; }
+  }catch(e){ msgEl.innerHTML = '<div class="msg err">' + e.message + (retryBtnId ? retryHint(msgEl, retryBtnId) : '') + '</div>'; }
 }
 
 // ---- 실거래가: 단지별로 묶어서 보여주기 + 자동완성 + 지도 링크 ----
@@ -560,15 +583,15 @@ document.getElementById('tradeGo').addEventListener('click', ()=>{
   const url = `/api/apt-trade?lawdCd=${region}&dealYmd=${dealYmd}`;
   msgEl.innerHTML = '<div class="msg loading">조회 중입니다…</div>';
   resultsEl.innerHTML = '';
-  fetch(url).then(r=>r.json()).then(data=>{
-    if(!data.ok){ msgEl.innerHTML = '<div class="msg err">오류: ' + (data.error || '알 수 없는 오류') + '</div>'; return; }
+  safeFetchJson(url).then(data=>{
+    if(!data.ok){ msgEl.innerHTML = '<div class="msg err">오류: ' + (data.error || '알 수 없는 오류') + retryHint(msgEl, 'tradeGo') + '</div>'; return; }
     if(!data.items || data.items.length === 0){ msgEl.innerHTML = '<div class="msg err">조건에 맞는 결과가 없습니다. 지역·기간을 다시 확인해주세요.</div>'; return; }
     tradeGroups = groupTradeItems(data.items);
     msgEl.innerHTML = `<div class="msg ok">거래 ${data.items.length}건 · 단지 ${tradeGroups.length}개 조회됨</div>`;
     document.getElementById('tradeDatalist').innerHTML = tradeGroups.map(g=>`<option value="${g.name}">`).join('');
     document.getElementById('tradeSearchField').style.display = '';
     renderTradeGroups();
-  }).catch(e=>{ msgEl.innerHTML = '<div class="msg err">네트워크 오류: ' + e.message + '</div>'; });
+  }).catch(e=>{ msgEl.innerHTML = '<div class="msg err">' + e.message + retryHint(msgEl, 'tradeGo') + '</div>'; });
 });
 
 document.getElementById('bldGo').addEventListener('click', ()=>{
@@ -595,7 +618,7 @@ document.getElementById('bldGo').addEventListener('click', ()=>{
           <dt>사용승인일</dt><dd>${it.사용승인일||'-'}</dd>
         </dl>
       </div>`).join('');
-  });
+  }, 'bldGo');
 });
 
 // ---------------- calculators ----------------
