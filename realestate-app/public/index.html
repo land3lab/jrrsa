@@ -69,6 +69,13 @@
   .grid{display:grid; grid-template-columns:1fr; gap:10px;}
   .link-card{display:flex; flex-direction:column; gap:3px; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:12px; padding:13px 15px;}
   .link-card .name{font-weight:700; font-size:13.8px; color:var(--navy);}
+  .link-card .wk{display:inline-block; margin-left:6px; vertical-align:1px; font-style:normal;
+    font-size:10px; font-weight:700; letter-spacing:.03em; color:#fff; background:var(--burgundy);
+    border-radius:999px; padding:2px 7px;}
+  .sitenote{display:flex; gap:8px; align-items:baseline; padding:10px 14px; margin-bottom:14px;
+    border-left:3px solid var(--gold-line); background:var(--gold-tint); border-radius:0 9px 9px 0;
+    font-size:12.5px; color:var(--ink-soft);}
+  .sitenote b{color:var(--gold); white-space:nowrap;}
   .link-card .name{order:0;} .link-card .use{order:1;} .link-card .url{order:2;} .link-card .open{order:3;}
   .link-card .url{font-size:11.5px; color:var(--ink-faint); word-break:break-all;}
   .link-card .use{font-size:12.3px; color:var(--ink-soft); margin-top:2px;}
@@ -192,9 +199,177 @@
 
   <!-- 정보사이트 -->
   <section class="panel" id="p-sites">
+    <div class="sitenote"><b>1주차 표시</b><span>지난 시간에 함께 본 사이트에는 <em class="wk" style="margin-left:0">1주차</em> 표시가 붙어 있습니다. 나머지는 실무에서 같이 쓰면 좋은 곳들입니다.</span></div>
+
     <div class="card">
-      <h2>부동산 정보 사이트 이모저모</h2>
-      <p class="sub">가치평가·시세추정·사업성 검토에 쓰는 프롭테크 플랫폼 모음입니다.</p>
+      <h2>공공 원자료 — 여기서 시작합니다</h2>
+      <p class="sub">정부·공공기관이 직접 공개하는 자료입니다. 민간 사이트의 시세는 여기서 나온 숫자를 가공한 것이므로, 손님에게 근거를 대야 할 때는 항상 이쪽을 봅니다.</p>
+      <div class="grid">
+        <a class="link-card" href="https://rt.molit.go.kr/" target="_blank" rel="noopener">
+          <span class="name">실거래가 공개시스템<em class="wk">1주차</em></span><span class="url">rt.molit.go.kr</span>
+          <span class="use">계약서에 적힌 실제 거래금액. 모든 분석의 출발점</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.reb.or.kr/r-one/" target="_blank" rel="noopener">
+          <span class="name">한국부동산원 부동산통계 (R-ONE)<em class="wk">1주차</em></span><span class="url">reb.or.kr/r-one</span>
+          <span class="use">주간·월간 아파트 가격동향 원본 통계. 시장 방향을 볼 때</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://kosis.kr/" target="_blank" rel="noopener">
+          <span class="name">국가통계포털 (KOSIS)<em class="wk">1주차</em></span><span class="url">kosis.kr</span>
+          <span class="use">인구·가구·주택 통계. 수요의 밑그림을 그릴 때</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.realtyprice.kr/" target="_blank" rel="noopener">
+          <span class="name">부동산공시가격 알리미</span><span class="url">realtyprice.kr</span>
+          <span class="use">공시지가·주택공시가격. 보유세와 건강보험료의 기준</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.kras.go.kr/" target="_blank" rel="noopener">
+          <span class="name">일사편리</span><span class="url">kras.go.kr</span>
+          <span class="use">부동산종합증명서 한 장에 18종 서류를 모아서</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.eum.go.kr/" target="_blank" rel="noopener">
+          <span class="name">토지이음</span><span class="url">eum.go.kr</span>
+          <span class="use">토지이용계획·행위제한. 이 땅에 무엇을 지을 수 있는지</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.eais.go.kr/" target="_blank" rel="noopener">
+          <span class="name">세움터</span><span class="url">eais.go.kr</span>
+          <span class="use">건축물대장 열람. 위반건축물 여부를 여기서 확인</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.iros.go.kr/" target="_blank" rel="noopener">
+          <span class="name">인터넷등기소</span><span class="url">iros.go.kr</span>
+          <span class="use">등기부등본 발급·열람. 권리관계 확인의 기본</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://seereal.lh.or.kr/" target="_blank" rel="noopener">
+          <span class="name">씨:리얼 (SEE:REAL)</span><span class="url">seereal.lh.or.kr</span>
+          <span class="use">LH가 운영하는 부동산 종합정보. 통계·지도·용어사전</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.data.go.kr/" target="_blank" rel="noopener">
+          <span class="name">공공데이터포털</span><span class="url">data.go.kr</span>
+          <span class="use">실거래 판독기가 쓰는 바로 그 자료의 원천</span><span class="open">열기 ↗</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>아파트 시세 · 단지 분석</h2>
+      <p class="sub">같은 단지도 사이트마다 숫자가 다릅니다. 무엇을 기준으로 낸 값인지 알고 쓰면 손님 앞에서 흔들리지 않습니다.</p>
+      <div class="grid">
+        <a class="link-card" href="https://land.naver.com/" target="_blank" rel="noopener">
+          <span class="name">네이버 부동산<em class="wk">1주차</em></span><span class="url">land.naver.com</span>
+          <span class="use">매물 호가의 사실상 기준. 시장 분위기를 가장 빨리 반영</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://asil.kr/" target="_blank" rel="noopener">
+          <span class="name">아실<em class="wk">1주차</em></span><span class="url">asil.kr</span>
+          <span class="use">여러 단지 가격 비교. 대지지분·조합원분양가 조회</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://hogangnono.com/" target="_blank" rel="noopener">
+          <span class="name">호갱노노<em class="wk">1주차</em></span><span class="url">hogangnono.com</span>
+          <span class="use">실거래가 지도. 경사도·상권·학군까지 한 화면에</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://m.richgo.ai/" target="_blank" rel="noopener">
+          <span class="name">리치고<em class="wk">1주차</em></span><span class="url">richgo.ai</span>
+          <span class="use">빅데이터 기반 시세 분석과 가격 예측</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://kbland.kr/" target="_blank" rel="noopener">
+          <span class="name">KB부동산</span><span class="url">kbland.kr</span>
+          <span class="use">KB시세 — 은행 대출 한도를 산정하는 기준값</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://data.kbland.kr/" target="_blank" rel="noopener">
+          <span class="name">KB부동산 데이터허브</span><span class="url">data.kbland.kr</span>
+          <span class="use">KB 통계 원본. 지역별 지수와 빅데이터 지도</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://aptgin.com/" target="_blank" rel="noopener">
+          <span class="name">부동산지인</span><span class="url">aptgin.com</span>
+          <span class="use">지역별 수요와 입주물량. 공급 과잉 판단에 유용</span><span class="open">열기 ↗</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>토지 · 건물 · 상가</h2>
+      <p class="sub">아파트가 아닌 물건은 시세라는 게 없습니다. 실거래 사례를 지도에서 직접 찾아 비교하는 수밖에 없습니다.</p>
+      <div class="grid">
+        <a class="link-card" href="https://disco.re/" target="_blank" rel="noopener">
+          <span class="name">디스코<em class="wk">1주차</em></span><span class="url">disco.re</span>
+          <span class="use">토지·빌딩 실거래가를 지도에서. 가장 많이 쓰는 도구</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.valueupmap.com/" target="_blank" rel="noopener">
+          <span class="name">밸류맵<em class="wk">1주차</em></span><span class="url">valueupmap.com</span>
+          <span class="use">토지·건물 실거래와 사업성 검토, 건축설계까지</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.landbook.net/" target="_blank" rel="noopener">
+          <span class="name">랜드북</span><span class="url">landbook.net</span>
+          <span class="use">소규모 필지의 AI 적정가와 신축 사업성 분석</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.bdsplanet.com/" target="_blank" rel="noopener">
+          <span class="name">부동산플래닛</span><span class="url">bdsplanet.com</span>
+          <span class="use">전국 토지·건물 실거래가와 AI 추정가</span><span class="open">열기 ↗</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>도시계획 · 재개발 · 분양</h2>
+      <p class="sub">정비사업은 단계마다 규제가 다릅니다. 조합 공고와 구청 고시로 그날 기준을 확인하는 습관이 사고를 막습니다.</p>
+      <div class="grid">
+        <a class="link-card" href="https://urban.seoul.go.kr/" target="_blank" rel="noopener">
+          <span class="name">서울도시공간포털<em class="wk">1주차</em></span><span class="url">urban.seoul.go.kr</span>
+          <span class="use">서울시 도시계획 결정·열람공고. 용도지역과 지구단위계획</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.jungnang.go.kr/" target="_blank" rel="noopener">
+          <span class="name">중랑구청<em class="wk">1주차</em></span><span class="url">jungnang.go.kr</span>
+          <span class="use">주택재개발사업 추진현황과 구청 고시·공고 원문</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.applyhome.co.kr/" target="_blank" rel="noopener">
+          <span class="name">청약홈<em class="wk">1주차</em></span><span class="url">applyhome.co.kr</span>
+          <span class="use">분양 일정·경쟁률·당첨 가점 확인</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://cleanup.seoul.go.kr/" target="_blank" rel="noopener">
+          <span class="name">정비사업 정보몽땅</span><span class="url">cleanup.seoul.go.kr</span>
+          <span class="use">서울시 조합의 예산·회계·공고를 조합원 누구나 열람</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://jaegebal.com/" target="_blank" rel="noopener">
+          <span class="name">재개발닷컴</span><span class="url">jaegebal.com</span>
+          <span class="use">구역별 진행단계와 실거래가를 모아서 보여줌</span><span class="open">열기 ↗</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>경매 · 공매</h2>
+      <p class="sub">권리분석 없이 들어가면 안 됩니다. 물건 검색은 여기서, 판단은 등기부와 현장에서.</p>
+      <div class="grid">
+        <a class="link-card" href="https://www.courtauction.go.kr/" target="_blank" rel="noopener">
+          <span class="name">법원경매정보</span><span class="url">courtauction.go.kr</span>
+          <span class="use">법원이 직접 공개하는 경매 물건과 매각기일</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.onbid.co.kr/" target="_blank" rel="noopener">
+          <span class="name">온비드</span><span class="url">onbid.co.kr</span>
+          <span class="use">캠코가 운영하는 공매. 국공유재산·압류재산</span><span class="open">열기 ↗</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>세금 · 협회</h2>
+      <p class="sub">세금은 상담 자리에서 가장 많이 나오는 질문입니다. 추정하지 말고 여기서 확인하세요.</p>
+      <div class="grid">
+        <a class="link-card" href="https://www.hometax.go.kr/" target="_blank" rel="noopener">
+          <span class="name">홈택스</span><span class="url">hometax.go.kr</span>
+          <span class="use">양도소득세·종합부동산세 등 국세</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="https://www.wetax.go.kr/" target="_blank" rel="noopener">
+          <span class="name">위택스</span><span class="url">wetax.go.kr</span>
+          <span class="use">취득세·재산세 등 지방세</span><span class="open">열기 ↗</span>
+        </a>
+        <a class="link-card" href="http://www.kar.or.kr/" target="_blank" rel="noopener">
+          <span class="name">한국공인중개사협회</span><span class="url">kar.or.kr</span>
+          <span class="use">공제·교육·서식과 협회 공지</span><span class="open">열기 ↗</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>AI 가치평가 · 사업성 검토</h2>
+      <p class="sub">감정평가와 사업성 검토를 자동화한 플랫폼들입니다. 숫자를 그대로 쓰기보다 근거를 확인하는 용도로.</p>
       <div class="grid">
         <a class="link-card" href="https://flexity.app/" target="_blank" rel="noopener">
           <span class="name">플렉시티 (Flexity)</span><span class="url">flexity.app</span>
@@ -214,6 +389,7 @@
         </a>
       </div>
     </div>
+
   </section>
 
   <!-- AI 도구 -->
