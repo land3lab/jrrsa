@@ -35,7 +35,32 @@
   header .brand{display:flex; align-items:center; gap:10px;}
   header .brand b{font-family:var(--font-display); font-size:15px; color:#fff;}
   header .brand span{font-size:10.5px; color:var(--gold-soft);}
-  #installBtn{display:none; background:var(--gold-soft); color:var(--navy-deep); border:none; border-radius:8px; padding:8px 12px; font-weight:700; font-size:12px; cursor:pointer; flex:0 0 auto;}
+  #installBtn{display:inline-flex; align-items:center; gap:5px; background:var(--gold-soft); color:var(--navy-deep);
+    border:none; border-radius:9px; padding:10px 14px; min-height:42px; font-weight:700; font-size:12.5px;
+    cursor:pointer; flex:0 0 auto; white-space:nowrap;}
+  #installBtn:hover{background:#DCC08A;}
+  #installBtn[hidden]{display:none !important;}
+  /* 홈 화면 추가 안내 */
+  .sheet{position:fixed; inset:0; z-index:60; background:rgba(21,34,56,.55); display:flex;
+    align-items:flex-end; justify-content:center; padding:0;}
+  .sheet[hidden]{display:none !important;}
+  .sheetbox{background:var(--surface); width:100%; max-width:520px; border-radius:16px 16px 0 0;
+    padding:20px 18px 24px; max-height:86vh; overflow:auto; box-shadow:0 -8px 30px rgba(0,0,0,.28);}
+  .sheetbox h3{font-family:var(--font-display); font-size:18px; color:var(--navy); margin:0 0 4px;}
+  .sheetbox .s{font-size:13px; color:var(--ink-soft); margin:0 0 16px;}
+  .sheetbox ol{list-style:none; margin:0 0 16px; padding:0; counter-reset:i;}
+  .sheetbox ol li{counter-increment:i; display:flex; gap:11px; padding:10px 0; border-bottom:1px solid var(--border-soft);}
+  .sheetbox ol li:last-child{border-bottom:0;}
+  .sheetbox ol li::before{content:counter(i); flex:0 0 26px; height:26px; border-radius:50%;
+    background:var(--burgundy); color:#fff; font-weight:700; font-size:12.5px;
+    display:flex; align-items:center; justify-content:center;}
+  .sheetbox ol li span{font-size:14px; line-height:1.55;}
+  .sheetbox ol li b{color:var(--navy);}
+  .sheetbox .why{font-size:12.5px; color:var(--ink-soft); background:var(--gold-tint);
+    border-left:3px solid var(--gold-line); border-radius:0 9px 9px 0; padding:10px 13px; margin-bottom:16px;}
+  .sheetbox .close{width:100%; background:var(--navy); color:#fff; border:none; border-radius:10px;
+    padding:13px; min-height:48px; font-weight:700; font-size:15px; cursor:pointer;}
+  @media (min-width:560px){ .sheet{align-items:center;} .sheetbox{border-radius:16px;} }
 
   .embedwrap{background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden;}
   .embedbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between;
@@ -70,19 +95,21 @@
   .link-card{display:flex; flex-direction:column; gap:3px; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:12px; padding:13px 15px;}
   .addrbox{background:var(--navy); border-radius:12px; padding:14px 15px 15px; margin-bottom:16px;}
   .addrbox .lab{font-size:11.5px; font-weight:700; letter-spacing:.04em; color:var(--gold-soft); margin-bottom:7px;}
-  .addrbox .row{display:flex; gap:7px;}
-  .addrbox input{flex:1 1 auto; min-width:0; background:#fff; border:1px solid #3A4E6E; border-radius:9px;
-    padding:11px 12px; min-height:46px; font-size:14px; color:var(--ink);}
-  .addrbox button{flex:0 0 auto; background:var(--gold-soft); color:var(--navy-deep); border:none;
-    border-radius:9px; padding:11px 18px; min-height:46px; font-weight:700; font-size:14px; cursor:pointer;}
-  .addrbox button:hover{background:#DCC08A;}
-  .addrbox .tip2{font-size:11.5px; color:#9AA6B6; margin-top:8px; line-height:1.6;}
-  .addrhits{margin-top:10px; display:flex; flex-direction:column; gap:6px;}
-  .addrhits button{width:100%; text-align:left; background:#2B3F60; color:#E7EDF5; border:1px solid #3A4E6E;
-    border-radius:9px; padding:10px 12px; min-height:44px; font-size:13px; cursor:pointer; line-height:1.5;}
-  .addrhits button:hover{background:#36496B;}
-  .addrhits button span{display:block; font-size:11.5px; color:#9AA6B6; margin-top:2px;}
-  .addrhits .warn{color:#F0C9CF; font-size:12.5px; padding:4px 2px;}
+  .addrbox .row{display:flex; gap:9px; align-items:center; flex-wrap:wrap;}
+  .addrbox .find{flex:0 0 auto; background:var(--gold-soft); color:var(--navy-deep); border:none;
+    border-radius:9px; padding:12px 20px; min-height:48px; font-weight:700; font-size:15px; cursor:pointer;}
+  .addrbox .find:hover{background:#DCC08A;}
+  .addrbox .picked{flex:1 1 170px; min-width:0; font-size:13.5px; color:#E7EDF5; line-height:1.5;}
+  .addrbox .picked em{display:block; font-style:normal; font-size:11.5px; color:#9AA6B6; margin-top:2px;}
+  .addrbox .picked.none{color:#8494A8;}
+  .addrbox .tip2{font-size:11.5px; color:#9AA6B6; margin-top:9px; line-height:1.6;}
+  .pcwrap{margin-top:11px; background:#fff; border-radius:10px; overflow:hidden;}
+  .pcwrap .pchead{display:flex; justify-content:space-between; align-items:center; padding:8px 10px;
+    background:#2B3F60; color:#E7EDF5; font-size:12.5px; font-weight:700;}
+  .pcwrap .pchead button{background:transparent; color:#C9D4E4; border:1px solid #4A5E80;
+    border-radius:7px; padding:6px 12px; min-height:36px; font-size:12px; cursor:pointer;}
+  .pcwrap .pcbody{height:430px;}
+  .addrwarn{color:#F0C9CF; font-size:12.5px; margin-top:9px;}
   .link-card .name{font-weight:700; font-size:13.8px; color:var(--navy);}
   .link-card .wk{display:inline-block; margin-left:6px; vertical-align:1px; font-style:normal;
     font-size:10px; font-weight:700; letter-spacing:.03em; color:#fff; background:var(--burgundy);
@@ -155,12 +182,12 @@
   footer{max-width:720px; margin:20px auto 0; padding:0 16px; font-size:11px; color:var(--ink-faint); text-align:center;}
 </style>
 <script>
-// 카카오맵 JavaScript 키 — 주소를 법정동코드·본번·부번으로 바꾸는 데만 씁니다.
-var KAKAO_JS_KEY = "5a8c7839e0ce22e386cc85c386184e43";
+// 카카오(다음) 우편번호 서비스 — API 키가 필요 없습니다.
+// 주소를 고르면 법정동코드(bcode)와 지번을 돌려주므로, 그대로 공공데이터 조회에 씁니다.
 (function(){
   var t = document.createElement("script");
-  t.src = "https://dapi.kakao.com/v2/maps/sdk.js?appkey=" + KAKAO_JS_KEY + "&libraries=services&autoload=false";
-  t.onerror = function(){ window.__kakaoFailed = true; };
+  t.src = "https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+  t.onerror = function(){ window.__pcFailed = true; };
   document.head.appendChild(t);
 })();
 </script>
@@ -169,7 +196,7 @@ var KAKAO_JS_KEY = "5a8c7839e0ce22e386cc85c386184e43";
 
 <header>
   <div class="brand"><b>🏠 나폴길 AI 부동산 툴박스</b><span>내 앱 · 정보사이트 · AI도구 · 비서만들기 · 실거래가</span></div>
-  <button id="installBtn">홈 화면에 추가</button>
+  <button id="installBtn" type="button" hidden>홈 화면에 추가</button>
 </header>
 
 <nav class="tabs" id="mainTabs">
@@ -490,11 +517,11 @@ var KAKAO_JS_KEY = "5a8c7839e0ce22e386cc85c386184e43";
         <div class="addrbox">
           <div class="lab">주소로 찾기</div>
           <div class="row">
-            <input type="text" id="tradeAddr" placeholder="예: 서울 중랑구 면목동 69-14" autocomplete="off">
-            <button type="button" id="tradeAddrGo">찾기</button>
+            <button type="button" class="find" id="tradeAddrGo">주소 검색</button>
+            <div class="picked none" id="tradePicked">주소를 고르면 그 동네 거래만 보여드립니다</div>
           </div>
-          <div class="tip2">지번주소·도로명주소 모두 됩니다. 동 이름까지만 넣어도 찾아집니다.</div>
-          <div class="addrhits" id="tradeAddrHits"></div>
+          <div class="tip2">버튼을 누르면 검색창이 열립니다. 동 이름이나 건물명만 넣어도 찾아집니다.</div>
+          <div class="pcwrap" id="tradePc" hidden></div>
         </div>
         <div class="field"><label>지역</label><select id="tradeRegion"></select></div>
         <div class="field"><label>계약년월</label><input type="month" id="tradeYm"></div>
@@ -516,11 +543,11 @@ var KAKAO_JS_KEY = "5a8c7839e0ce22e386cc85c386184e43";
         <div class="addrbox">
           <div class="lab">주소로 찾기</div>
           <div class="row">
-            <input type="text" id="bldAddr" placeholder="예: 서울 중랑구 동일로92길 40" autocomplete="off">
-            <button type="button" id="bldAddrGo">찾기</button>
+            <button type="button" class="find" id="bldAddrGo">주소 검색</button>
+            <div class="picked none" id="bldPicked">주소를 고르면 법정동코드와 번지가 자동으로 채워집니다</div>
           </div>
-          <div class="tip2">건축물대장은 지번이 있어야 조회됩니다. 도로명주소를 넣어도 지번으로 바꿔 채워 드립니다.</div>
-          <div class="addrhits" id="bldAddrHits"></div>
+          <div class="tip2">도로명주소로 골라도 지번으로 바꿔 채워 드립니다. 건축물대장은 지번이 있어야 조회됩니다.</div>
+          <div class="pcwrap" id="bldPc" hidden></div>
         </div>
         <div class="field"><label>시군구</label><select id="bldRegion"></select></div>
         <div class="row2">
@@ -652,6 +679,16 @@ var KAKAO_JS_KEY = "5a8c7839e0ce22e386cc85c386184e43";
     </div>
   </section>
 </main>
+
+<div class="sheet" id="installSheet" hidden>
+  <div class="sheetbox">
+    <h3 id="isTitle">홈 화면에 추가하기</h3>
+    <p class="s" id="isSub"></p>
+    <div class="why">한 번 추가해두면 앱처럼 아이콘으로 열립니다. 주소를 외우거나 즐겨찾기를 뒤질 필요가 없습니다.</div>
+    <ol id="isSteps"></ol>
+    <button class="close" type="button" id="isClose">닫기</button>
+  </div>
+</div>
 
 <footer>나폴길 · Land3 Lab — 공공데이터포털 Open API 기반</footer>
 
@@ -845,41 +882,55 @@ function renderTradeGroups(){
   }).join('');
 }
 
-// ---------------- 주소로 찾기 (카카오 주소검색) ----------------
+// ---------------- 주소로 찾기 (카카오 우편번호 서비스) ----------------
 let tradeDongFilter = '';
-let GEO = null;
-function withGeocoder(cb){
-  if (GEO) return cb(GEO);
-  if (window.__kakaoFailed) return cb(null);
-  if (window.kakao && window.kakao.maps) {
-    kakao.maps.load(function(){
-      try { GEO = new kakao.maps.services.Geocoder(); } catch(e){ GEO = null; }
-      cb(GEO);
-    });
+function PostcodeCtor(){
+  return (window.daum && window.daum.Postcode) || (window.kakao && window.kakao.Postcode) || null;
+}
+// 우편번호 서비스가 주는 값 → 공공데이터 조회에 필요한 코드로 바꾼다
+function parsePicked(d){
+  const bcode = (d.bcode || '').replace(/[^0-9]/g, '');
+  const jibun = (d.jibunAddress || d.autoJibunAddress || '').replace(/\s*\(.*\)\s*$/, '').trim();
+  const m = jibun.match(/(산)?\s*(\d+)(?:-(\d+))?\s*$/);
+  return {
+    sgg: bcode.slice(0, 5),
+    bjd: bcode.slice(5),
+    bun: m ? m[2] : '',
+    ji:  (m && m[3]) ? m[3] : '',
+    mountain: (m && m[1]) ? '1' : '0',
+    dong: (d.bname || '').trim(),
+    sido: d.sido || '',
+    sgun: d.sigungu || '',
+    jibun: jibun,
+    road: d.roadAddress || d.address || ''
+  };
+}
+function openPostcode(wrapId, onDone){
+  const wrap = document.getElementById(wrapId);
+  const C = PostcodeCtor();
+  if (!C) {
+    wrap.hidden = false;
+    wrap.innerHTML = '<div class="addrwarn" style="padding:10px 12px">주소 검색을 불러오지 못했습니다. 아래 칸에 직접 입력해주세요.</div>';
     return;
   }
-  let n = 0;
-  (function wait(){
-    if (window.kakao && window.kakao.maps) return withGeocoder(cb);
-    if (window.__kakaoFailed || ++n > 60) return cb(null);
-    setTimeout(wait, 100);
-  })();
+  wrap.hidden = false;
+  wrap.innerHTML = '<div class="pchead"><span>주소 검색</span><button type="button">닫기</button></div><div class="pcbody"></div>';
+  wrap.querySelector('.pchead button').addEventListener('click', function(){ wrap.hidden = true; wrap.innerHTML = ''; });
+  const body = wrap.querySelector('.pcbody');
+  new C({
+    oncomplete: function(data){
+      wrap.hidden = true; wrap.innerHTML = '';
+      onDone(parsePicked(data));
+    },
+    width: '100%',
+    height: '100%'
+  }).embed(body);
+  wrap.scrollIntoView({ block: 'nearest' });
 }
-function addrInfo(r){
-  const a = r.address;
-  if (!a || !a.b_code || a.b_code.length < 10) return null;
-  return {
-    sgg: a.b_code.slice(0,5),
-    bjd: a.b_code.slice(5),
-    bun: (a.main_address_no || '').replace(/[^0-9]/g,'') || '0',
-    ji:  (a.sub_address_no  || '').replace(/[^0-9]/g,'') || '0',
-    mountain: (a.mountain_yn === 'Y') ? '1' : '0',
-    sido: a.region_1depth_name || '',
-    sgun: a.region_2depth_name || '',
-    dong: (a.region_3depth_name || '').trim(),
-    jibun: a.address_name || '',
-    road: (r.road_address && r.road_address.address_name) || ''
-  };
+function showPicked(id, info){
+  const el = document.getElementById(id);
+  el.classList.remove('none');
+  el.innerHTML = info.jibun + (info.road ? '<em>' + info.road + '</em>' : '');
 }
 function ensureRegionOption(selId, code, label){
   const sel = document.getElementById(selId);
@@ -890,65 +941,30 @@ function ensureRegionOption(selId, code, label){
   }
   sel.value = code;
 }
-function addrSearch(inputId, hitsId, onPick){
-  const q = document.getElementById(inputId).value.trim();
-  const hits = document.getElementById(hitsId);
-  if (!q) { hits.innerHTML = '<div class="warn">주소를 입력해주세요.</div>'; return; }
-  hits.innerHTML = '<div class="warn">찾는 중…</div>';
-  withGeocoder(function(geo){
-    if (!geo) {
-      hits.innerHTML = '<div class="warn">주소 검색을 불러오지 못했습니다. 아래 칸에 직접 입력해주세요.</div>';
-      return;
-    }
-    geo.addressSearch(q, function(res, status){
-      if (status !== kakao.maps.services.Status.OK || !res.length) {
-        hits.innerHTML = '<div class="warn">그 주소를 찾지 못했습니다. 시·구·동까지 넣어 다시 해보세요.</div>';
-        return;
-      }
-      const list = res.slice(0, 5).map(addrInfo).filter(Boolean);
-      if (!list.length) {
-        hits.innerHTML = '<div class="warn">지번을 확인할 수 없는 주소입니다. 지번주소로 넣어주세요.</div>';
-        return;
-      }
-      hits.innerHTML = '';
-      list.forEach(function(info, i){
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.innerHTML = info.jibun + (info.road ? '<span>' + info.road + '</span>' : '');
-        btn.addEventListener('click', function(){
-          hits.innerHTML = '<div class="warn" style="color:#BFE0C6">선택: ' + info.jibun + '</div>';
-          onPick(info);
-        });
-        hits.appendChild(btn);
-      });
-      if (list.length === 1) hits.firstChild.click();
-    });
-  });
-}
 document.getElementById('tradeAddrGo').addEventListener('click', function(){
-  addrSearch('tradeAddr', 'tradeAddrHits', function(info){
-    ensureRegionOption('tradeRegion', info.sgg, (info.sido + ' ' + info.sgun).trim());
+  openPostcode('tradePc', function(info){
+    showPicked('tradePicked', info);
+    if (info.sgg) ensureRegionOption('tradeRegion', info.sgg, (info.sido + ' ' + info.sgun).trim());
     tradeDongFilter = info.dong;
     document.getElementById('tradeGo').click();
   });
 });
-document.getElementById('tradeAddr').addEventListener('keydown', function(e){
-  if (e.key === 'Enter') document.getElementById('tradeAddrGo').click();
-});
 document.getElementById('tradeRegion').addEventListener('change', function(){ tradeDongFilter = ''; });
 
 document.getElementById('bldAddrGo').addEventListener('click', function(){
-  addrSearch('bldAddr', 'bldAddrHits', function(info){
-    ensureRegionOption('bldRegion', info.sgg, (info.sido + ' ' + info.sgun).trim());
+  openPostcode('bldPc', function(info){
+    showPicked('bldPicked', info);
+    if (info.sgg) ensureRegionOption('bldRegion', info.sgg, (info.sido + ' ' + info.sgun).trim());
     document.getElementById('bldDong').value = info.bjd;
     document.getElementById('bldBun').value = info.bun;
-    document.getElementById('bldJi').value = (info.ji === '0') ? '' : info.ji;
+    document.getElementById('bldJi').value = info.ji;
     document.getElementById('bldMountain').value = info.mountain;
+    if (!info.bun) {
+      document.getElementById('bldMsg').innerHTML = '<div class="msg err">그 주소에서 지번을 읽지 못했습니다. 번지를 직접 넣어주세요.</div>';
+      return;
+    }
     document.getElementById('bldGo').click();
   });
-});
-document.getElementById('bldAddr').addEventListener('keydown', function(e){
-  if (e.key === 'Enter') document.getElementById('bldAddrGo').click();
 });
 
 document.getElementById('tradeKeyword').addEventListener('input', renderTradeGroups);
@@ -1152,18 +1168,92 @@ function calcComp(){
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('/sw.js').catch(()=>{}); });
 }
-let deferredPrompt;
+// ---------------- 홈 화면에 추가 ----------------
+// beforeinstallprompt 는 아이폰 사파리에서 아예 뜨지 않는다. 그래서 버튼은 항상 보여주고,
+// 이벤트가 있으면 바로 설치창을, 없으면 기기에 맞는 방법을 안내한다.
+let deferredPrompt = null;
+const installBtn = document.getElementById('installBtn');
+
+function isInstalled(){
+  try {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+           window.navigator.standalone === true;
+  } catch(e){ return false; }
+}
+function deviceGuide(){
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|Chrome/.test(ua);
+  const isSamsung = /SamsungBrowser/.test(ua);
+  const isAndroid = /Android/.test(ua);
+
+  if (isIOS && !isSafari) return {
+    title: '사파리로 열어주세요',
+    sub: '아이폰은 사파리에서만 홈 화면에 추가할 수 있습니다.',
+    steps: ['이 화면 주소를 복사합니다 — <b>jrrsa.vercel.app</b>',
+            '<b>사파리</b>를 열고 주소를 붙여넣어 들어갑니다.',
+            '다시 이 버튼을 눌러 안내를 따라 하세요.']
+  };
+  if (isIOS) return {
+    title: '아이폰 홈 화면에 추가',
+    sub: '사파리 아래쪽 공유 버튼에서 추가합니다.',
+    steps: ['화면 <b>아래 가운데 공유 버튼</b>(네모에 화살표 ↑)을 누릅니다.',
+            '목록을 아래로 내려 <b>「홈 화면에 추가」</b>를 누릅니다.',
+            '오른쪽 위 <b>「추가」</b>를 누르면 끝입니다.']
+  };
+  if (isSamsung) return {
+    title: '홈 화면에 추가',
+    sub: '삼성 인터넷에서 추가합니다.',
+    steps: ['오른쪽 아래 <b>≡ (메뉴)</b>를 누릅니다.',
+            '<b>「현재 페이지 추가」</b> 또는 <b>「홈 화면에 추가」</b>를 누릅니다.',
+            '<b>「추가」</b>를 누르면 끝입니다.']
+  };
+  if (isAndroid) return {
+    title: '홈 화면에 추가',
+    sub: '크롬 메뉴에서 추가합니다.',
+    steps: ['오른쪽 위 <b>⋮ (점 세 개)</b>를 누릅니다.',
+            '<b>「홈 화면에 추가」</b> 또는 <b>「앱 설치」</b>를 누릅니다.',
+            '<b>「추가」</b>를 누르면 끝입니다.']
+  };
+  return {
+    title: '바탕화면에 추가',
+    sub: '크롬·엣지 주소창에서 설치합니다.',
+    steps: ['주소창 오른쪽 끝의 <b>설치 아이콘</b>(⊕ 또는 모니터 모양)을 누릅니다.',
+            '<b>「설치」</b>를 누르면 끝입니다.',
+            '아이콘이 안 보이면 <b>⋮ 메뉴 → 저장 및 공유 → 페이지를 앱으로 설치</b>를 누르세요.']
+  };
+}
+function openInstallSheet(){
+  const g = deviceGuide();
+  document.getElementById('isTitle').textContent = g.title;
+  document.getElementById('isSub').textContent = g.sub;
+  document.getElementById('isSteps').innerHTML = g.steps.map(t => '<li><span>' + t + '</span></li>').join('');
+  document.getElementById('installSheet').hidden = false;
+}
+function closeInstallSheet(){ document.getElementById('installSheet').hidden = true; }
+
+if (!isInstalled()) installBtn.hidden = false;
+
 window.addEventListener('beforeinstallprompt', (e)=>{
   e.preventDefault();
   deferredPrompt = e;
-  document.getElementById('installBtn').style.display = 'inline-block';
+  installBtn.hidden = false;
 });
-document.getElementById('installBtn').addEventListener('click', async ()=>{
-  if(!deferredPrompt) return;
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  document.getElementById('installBtn').style.display = 'none';
+window.addEventListener('appinstalled', ()=>{ deferredPrompt = null; installBtn.hidden = true; });
+
+installBtn.addEventListener('click', async ()=>{
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const r = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (r && r.outcome === 'accepted') installBtn.hidden = true;
+    return;
+  }
+  openInstallSheet();   // 아이폰 등 설치창을 못 여는 브라우저
+});
+document.getElementById('isClose').addEventListener('click', closeInstallSheet);
+document.getElementById('installSheet').addEventListener('click', (e)=>{
+  if (e.target.id === 'installSheet') closeInstallSheet();
 });
 </script>
 </body>
