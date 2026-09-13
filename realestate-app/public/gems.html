@@ -15,10 +15,10 @@
 <style>
   :root{
     --bg:#F6F1E6; --surface:#FFFFFF; --surface-2:#FBF7EE; --border:#DDD3BD; --border-soft:#E7DFC9;
-    --ink:#1B2233; --ink-soft:#4B5468; --ink-faint:#7B8296;
+    --ink:#1B2233; --ink-soft:#3F4859; --ink-faint:#5F6878;
     --navy:#1F3352; --navy-deep:#152238; --navy-tint:#E7ECF3;
     --burgundy:#7D2E3A; --burgundy-soft:#A5525D; --burgundy-tint:#F4E6E7;
-    --gold:#A9812F; --gold-soft:#C9A45C; --gold-tint:#F3EAD2;
+    --gold:#7A5B16; --gold-line:#A9812F; --gold-soft:#C9A45C; --gold-tint:#F3EAD2;
     --good:#4D7A45; --good-bg:#E7EFE4;
     --font-display:'Noto Serif KR', serif; --font-body:'Noto Sans KR', sans-serif;
   }
@@ -42,10 +42,15 @@
   nav.tabs{display:flex; gap:5px; overflow-x:auto; background:var(--surface); border-bottom:1px solid var(--border);
     padding:9px 12px; position:sticky; top:52px; z-index:29;}
   html.embed nav.tabs{top:0;}
-  nav.tabs button{flex:0 0 auto; background:var(--surface-2); color:var(--ink-soft); font-weight:700; font-size:12.5px;
-    padding:8px 14px; border-radius:999px; cursor:pointer; border:1px solid var(--border-soft); white-space:nowrap;}
+  nav.tabs button{flex:0 0 auto; background:var(--surface-2); color:var(--ink-soft); font-weight:700; font-size:13px;
+    padding:10px 16px; min-height:44px; border-radius:999px; cursor:pointer; border:1px solid var(--border-soft); white-space:nowrap;}
   nav.tabs button.active{background:var(--navy); color:#fff; border-color:var(--navy);}
 
+  @media (max-width:640px){
+    header span{display:none;}
+    header b{font-size:14.5px;}
+    nav.tabs{top:50px;}
+  }
   .wrap{max-width:1000px; margin:0 auto; padding:16px 14px 0;}
   .panel{display:none;} .panel.active{display:block;}
   .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px;}
@@ -54,39 +59,44 @@
   .lead{font-size:13.5px; color:var(--ink-soft); margin:0 0 14px;}
 
   .btn{background:var(--navy); color:#fff; border:1px solid var(--navy); border-radius:9px;
-    padding:8px 15px; font-weight:700; font-size:13px; cursor:pointer; white-space:nowrap;}
+    padding:11px 17px; min-height:44px; font-weight:700; font-size:13px; cursor:pointer; white-space:nowrap;}
   .btn:hover{background:var(--navy-deep);}
-  .btn.sm{padding:6px 12px; font-size:12px; border-radius:8px;}
+  .btn.sm{padding:9px 14px; min-height:40px; font-size:12.5px; border-radius:8px;}
   .btn.ghost{background:var(--surface-2); color:var(--ink-soft); border-color:var(--border);}
   .btn.ghost:hover{background:var(--gold-tint); color:var(--ink);}
   .btn.on{background:var(--good); border-color:var(--good);}
 
   /* ── 단계 ── */
   ol.steps{list-style:none; margin:0; padding:0; counter-reset:s;}
-  ol.steps li{counter-increment:s; display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--border-soft);}
+  ol.steps li{counter-increment:s; display:flex; gap:12px; padding:12px 6px; margin:0 -6px;
+    border-bottom:1px solid var(--border-soft); border-radius:8px; cursor:pointer;}
+  ol.steps li:hover{background:var(--gold-tint);}
   ol.steps li:last-child{border-bottom:0;}
   ol.steps li::before{content:counter(s); flex:0 0 26px; height:26px; border-radius:50%; background:var(--burgundy);
     color:#fff; font-weight:700; font-size:12.5px; display:flex; align-items:center; justify-content:center; margin-top:1px;}
   ol.steps .t{flex:1 1 auto; min-width:0;}
   ol.steps .t b{display:block; font-size:14px;}
   ol.steps .t span{font-size:12.5px; color:var(--ink-soft);}
-  ol.steps input[type=checkbox]{flex:0 0 auto; width:18px; height:18px; accent-color:var(--good); margin-top:4px; cursor:pointer;}
+  ol.steps input[type=checkbox]{flex:0 0 auto; width:24px; height:24px; accent-color:var(--good); margin-top:2px; cursor:pointer;}
   li.done .t b{color:var(--ink-faint); text-decoration:line-through;}
 
   .four{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:4px;}
   .four .b{background:var(--navy); color:#fff; border-radius:11px; padding:13px 14px;}
   .four .b i{font-style:normal; font-size:10.5px; letter-spacing:.09em; color:var(--gold-soft); font-weight:700;}
   .four .b b{display:block; font-size:14px; margin-top:3px;}
-  .four .b span{display:block; font-size:11.5px; color:#A9B6C8; margin-top:3px; line-height:1.5;}
+  .four .b span{display:block; font-size:11.5px; color:#B6C2D2; margin-top:3px; line-height:1.5;}
 
   /* ── 생성기 ── */
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;}
+  .gencard{position:sticky; top:110px;}
   .field{display:flex; flex-direction:column; gap:5px; margin-bottom:12px;}
-  .field label{font-size:10.5px; letter-spacing:.08em; color:var(--ink-faint); font-weight:700;}
-  .field select,.field input[type=text]{background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:8px 10px;}
+  .field label{font-size:11.5px; letter-spacing:.04em; color:var(--ink-soft); font-weight:700;}
+  .field select,.field input[type=text]{background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:10px 11px; min-height:44px;}
   .checks{display:flex; flex-direction:column; gap:7px;}
-  .checks label{display:flex; gap:8px; align-items:flex-start; font-size:13px; cursor:pointer; line-height:1.45;}
-  .checks input{width:16px; height:16px; accent-color:var(--burgundy); margin-top:2px; flex:0 0 auto;}
+  .checks label{display:flex; gap:9px; align-items:flex-start; font-size:13px; cursor:pointer;
+    line-height:1.5; padding:6px; margin:-6px; border-radius:8px; min-height:44px;}
+  .checks label:hover{background:var(--gold-tint);}
+  .checks input{width:22px; height:22px; accent-color:var(--burgundy); margin-top:1px; flex:0 0 auto;}
   .hint{font-size:11.5px; color:var(--ink-faint); margin-top:6px;}
 
   pre.out{margin:0; padding:14px; background:var(--navy-deep); color:#DDE5F0; border-radius:11px;
@@ -97,10 +107,10 @@
 
   /* ── 프롬프트 모음 ── */
   .toolbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px;}
-  .toolbar input[type=text]{flex:1 1 200px; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:9px 12px;}
+  .toolbar input[type=text]{flex:1 1 200px; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:11px 13px; min-height:44px;}
   .chips{display:flex; flex-wrap:wrap; gap:6px;}
   .chips button{background:var(--surface); border:1px solid var(--border-soft); color:var(--ink-soft);
-    font-size:12px; font-weight:600; padding:6px 12px; border-radius:999px; cursor:pointer;}
+    font-size:12.5px; font-weight:600; padding:9px 14px; min-height:40px; border-radius:999px; cursor:pointer;}
   .chips button.active{background:var(--burgundy); color:#fff; border-color:var(--burgundy);}
 
   .pgroup{margin-bottom:20px;}
@@ -117,15 +127,17 @@
   .note{display:flex; gap:8px; align-items:baseline; padding:10px 14px; border-radius:0 9px 9px 0;
     border-left:3px solid var(--gold); background:var(--gold-tint); font-size:12.5px; color:var(--ink-soft); margin:0 0 14px;}
   .note b{color:var(--gold); white-space:nowrap;}
+  .note{border-left-color:var(--gold-line);}
   .note.good{border-left-color:var(--good); background:var(--good-bg);} .note.good b{color:var(--good);}
 
 
   /* ── 도구 사이 이동 ── */
-  nav.jump{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px;}
-  nav.jump a{flex:1 1 160px; display:flex; align-items:center; justify-content:center; gap:7px;
-    background:var(--surface); border:1px solid var(--border); border-radius:11px;
-    padding:12px 14px; font-weight:700; font-size:13.5px; color:var(--navy); text-align:center;
-    box-shadow:0 1px 2px rgba(27,34,51,.05);}
+  nav.jump{display:flex; gap:6px; margin:0 0 14px;}
+  nav.jump a{flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center; gap:5px;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:11px 8px; font-weight:700; font-size:12.5px; color:var(--navy); text-align:center;
+    white-space:nowrap; box-shadow:0 1px 2px rgba(27,34,51,.05);}
+  @media (max-width:430px){ nav.jump a{font-size:11.5px; padding:11px 4px; gap:3px;} }
   nav.jump a:hover{background:var(--gold-tint); border-color:var(--gold-soft);}
   nav.jump a.cur{background:var(--navy); border-color:var(--navy); color:#fff; cursor:default;}
   nav.jump a.cur:hover{background:var(--navy);}
@@ -143,7 +155,17 @@
     box-shadow:0 6px 20px rgba(0,0,0,.25); pointer-events:none; transition:opacity .18s, transform .18s; z-index:60;}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
 
-  @media (max-width:760px){ .grid2{grid-template-columns:1fr;} .four{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:760px){
+    .grid2{grid-template-columns:1fr;}
+    .four{grid-template-columns:repeat(2,1fr);}
+    /* 체크를 바꿀 때마다 지침이 어떻게 달라지는지 바로 보이도록 맨 위에 고정한다 */
+    .gencard{order:-1; position:sticky; top:115px; z-index:20;
+      box-shadow:0 6px 18px rgba(27,34,51,.12); padding:12px 14px 13px;}
+    .gencard pre.out{max-height:26vh;}
+    .gencard .outhead{margin-bottom:7px;}
+    /* 고정된 칸은 최대한 낮게 — 보조 버튼과 안내는 감춘다 (복사는 위 버튼으로) */
+    .gencard .toolbar, .gencard .note{display:none;}
+  }
   @media (max-width:430px){ .four{grid-template-columns:1fr;} }
   @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
 </style>
@@ -156,10 +178,7 @@ try { if (/(?:^|[?&])embed=1(?:&|$)/.test(location.search)) document.documentEle
 
 <header>
   <div><b>🤖 젬스 실습실</b><span>지침 만들기 · 프롬프트 모음</span></div>
-  <div class="links">
-    <a class="chip" href="/panbokgi.html">판독기</a>
-    <a class="chip" href="/">← 툴박스</a>
-  </div>
+
 </header>
 
 <nav class="tabs" id="tabs">
@@ -260,8 +279,7 @@ try { if (/(?:^|[?&])embed=1(?:&|$)/.test(location.search)) document.documentEle
         </div>
       </div>
 
-      <div>
-        <div class="card" style="position:sticky; top:110px;">
+      <div class="card gencard">
           <div class="outhead">
             <h3>만들어진 지침</h3>
             <div style="display:flex; gap:6px;">
@@ -275,7 +293,6 @@ try { if (/(?:^|[?&])embed=1(?:&|$)/.test(location.search)) document.documentEle
             <button class="btn ghost sm" id="loadGem" type="button">저장한 것 불러오기</button>
           </div>
           <div class="note good" style="margin:12px 0 0;"><b>붙여넣을 곳</b><span>제미나이 → Gem 관리자 → 새로 만들기 → <b>지침</b> 칸</span></div>
-        </div>
       </div>
     </div>
   </section>
@@ -373,14 +390,26 @@ function renderList(el, items, key){
       + '<input type="checkbox" data-i="' + i + '"' + (on ? " checked" : "") + '>'
       + '<div class="t"><b>' + esc(s[0]) + "</b><span>" + esc(s[1]) + "</span></div></li>";
   }).join("");
-  el.onchange = function(e){
-    var cb = e.target.closest("input[type=checkbox]");
-    if (!cb) return;
+  function sync(cb){
     var st = LS.get(key, {});
     st[cb.dataset.i] = cb.checked;
     LS.set(key, st);
     cb.closest("li").classList.toggle("done", cb.checked);
     stepStat();
+  }
+  el.onchange = function(e){
+    var cb = e.target.closest("input[type=checkbox]");
+    if (cb) sync(cb);
+  };
+  // 줄 아무 데나 눌러도 체크되게 — 휴대폰에서 작은 네모를 정확히 누르기 어렵다
+  el.onclick = function(e){
+    if (e.target.closest("input[type=checkbox]")) return;
+    var li = e.target.closest("li");
+    if (!li) return;
+    var cb = li.querySelector("input[type=checkbox]");
+    if (!cb) return;
+    cb.checked = !cb.checked;
+    sync(cb);
   };
 }
 function stepStat(){

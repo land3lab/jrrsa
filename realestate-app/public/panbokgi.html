@@ -15,10 +15,10 @@
 <style>
   :root{
     --bg:#F6F1E6; --surface:#FFFFFF; --surface-2:#FBF7EE; --border:#DDD3BD; --border-soft:#E7DFC9;
-    --ink:#1B2233; --ink-soft:#4B5468; --ink-faint:#7B8296;
+    --ink:#1B2233; --ink-soft:#3F4859; --ink-faint:#5F6878;
     --navy:#1F3352; --navy-deep:#152238; --navy-tint:#E7ECF3;
     --burgundy:#7D2E3A; --burgundy-soft:#A5525D; --burgundy-tint:#F4E6E7;
-    --gold:#A9812F; --gold-soft:#C9A45C; --gold-tint:#F3EAD2;
+    --gold:#7A5B16; --gold-line:#A9812F; --gold-soft:#C9A45C; --gold-tint:#F3EAD2;
     --good:#4D7A45; --bad:#B23A3A;
     /* 차트 전용 — 색각 이상 대비까지 검증한 값 */
     --c-price:#A62B3C; --c-count:#1F6FA8; --c-price-soft:rgba(166,43,60,.13);
@@ -40,18 +40,24 @@
   header span{font-size:10.5px; color:var(--gold-soft); display:block;}
   header a.back{font-size:12px; color:#C9D4E4; border:1px solid #3A4E6E; border-radius:999px; padding:6px 12px; white-space:nowrap;}
 
+  @media (max-width:640px){
+    header span{display:none;}
+    header b{font-size:14.5px;}
+  }
   .wrap{max-width:1000px; margin:0 auto; padding:16px 14px 0;}
   .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px;}
   .card > h2{font-size:16px; margin-bottom:3px;}
   .card .sub{font-size:12.5px; color:var(--ink-soft); margin:0 0 12px;}
   .row{display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-end;}
   .field{display:flex; flex-direction:column; gap:4px; min-width:0;}
-  .field label{font-size:10.5px; letter-spacing:.08em; color:var(--ink-faint); font-weight:700;}
+  .field label{font-size:11.5px; letter-spacing:.04em; color:var(--ink-soft); font-weight:700;}
   .field select,.field input{background:var(--surface-2); border:1px solid var(--border); border-radius:9px;
-    padding:8px 10px; min-width:120px; max-width:100%;}
+    padding:10px 11px; min-height:44px; min-width:124px; max-width:100%;}
   .field input[type=text]{min-width:150px;}
   .btn{background:var(--navy); color:#fff; border:1px solid var(--navy); border-radius:9px;
-    padding:9px 18px; font-weight:700; cursor:pointer;}
+    padding:11px 20px; min-height:44px; font-weight:700; cursor:pointer;}
+  #btnFetch{flex:1 1 150px; font-size:15px;}
+  @media (max-width:560px){ .field{flex:1 1 100%;} #btnFetch{flex:1 1 100%;} }
   .btn:hover{background:var(--navy-deep);}
   .btn.ghost{background:var(--surface-2); color:var(--ink-soft); border-color:var(--border);}
   .btn.ghost:hover{background:var(--gold-tint); color:var(--ink);}
@@ -59,7 +65,7 @@
 
   nav.modes{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap;}
   nav.modes button{border:1px solid var(--border-soft); background:var(--surface-2); color:var(--ink-soft);
-    font-weight:700; font-size:12.5px; padding:8px 14px; border-radius:999px; cursor:pointer;}
+    font-weight:700; font-size:13px; padding:11px 17px; min-height:44px; border-radius:999px; cursor:pointer;}
   nav.modes button.active{background:var(--burgundy); color:#fff; border-color:var(--burgundy);}
   .modepanel{display:none;} .modepanel.active{display:block;}
 
@@ -73,6 +79,7 @@
   .note{display:flex; gap:8px; align-items:baseline; padding:9px 13px; border-radius:0 9px 9px 0;
     border-left:3px solid var(--gold); background:var(--gold-tint); font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;}
   .note b{color:var(--gold); white-space:nowrap;}
+  .note{border-left-color:var(--gold-line);}
   .note.err{border-left-color:var(--bad); background:#F6E4E4;} .note.err b{color:var(--bad);}
   .note[hidden]{display:none !important;}
 
@@ -129,11 +136,12 @@
     font-size:12px; line-height:1.7; white-space:pre-wrap; word-break:break-word; color:var(--ink-soft);}
 
   /* ── 도구 사이 이동 ── */
-  nav.jump{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px;}
-  nav.jump a{flex:1 1 160px; display:flex; align-items:center; justify-content:center; gap:7px;
-    background:var(--surface); border:1px solid var(--border); border-radius:11px;
-    padding:12px 14px; font-weight:700; font-size:13.5px; color:var(--navy); text-align:center;
-    box-shadow:0 1px 2px rgba(27,34,51,.05);}
+  nav.jump{display:flex; gap:6px; margin:0 0 14px;}
+  nav.jump a{flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center; gap:5px;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:11px 8px; font-weight:700; font-size:12.5px; color:var(--navy); text-align:center;
+    white-space:nowrap; box-shadow:0 1px 2px rgba(27,34,51,.05);}
+  @media (max-width:430px){ nav.jump a{font-size:11.5px; padding:11px 4px; gap:3px;} }
   nav.jump a:hover{background:var(--gold-tint); border-color:var(--gold-soft);}
   nav.jump a.cur{background:var(--navy); border-color:var(--navy); color:#fff; cursor:default;}
   nav.jump a.cur:hover{background:var(--navy);}
@@ -145,6 +153,15 @@
   html.embed body{padding-bottom:16px;}
   html.embed .wrap{padding-top:10px;}
 
+  .startguide{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 18px 20px;}
+  .startguide h2{font-size:16px; margin-bottom:12px;}
+  .startguide ol{list-style:none; margin:0; padding:0; counter-reset:g;}
+  .startguide li{counter-increment:g; display:flex; gap:11px; padding:9px 0;}
+  .startguide li::before{content:counter(g); flex:0 0 24px; height:24px; border-radius:50%;
+    background:var(--burgundy); color:#fff; font-weight:700; font-size:12px;
+    display:flex; align-items:center; justify-content:center;}
+  .startguide li span{font-size:13.5px; color:var(--ink-soft); line-height:1.55;}
+  .startguide li b{color:var(--ink);}
   footer{max-width:1000px; margin:20px auto 0; padding:14px; font-size:11.5px; color:var(--ink-faint); line-height:1.7;}
 
   @media (max-width:720px){
@@ -169,7 +186,6 @@ try { if (/(?:^|[?&])embed=1(?:&|$)/.test(location.search)) document.documentEle
 
 <header>
   <div><b>📈 실거래 판독기</b><span>공공데이터 · 추이 · 지도</span></div>
-  <a class="back" href="/">← 툴박스</a>
 </header>
 
 <main class="wrap">
@@ -235,7 +251,7 @@ try { if (/(?:^|[?&])embed=1(?:&|$)/.test(location.search)) document.documentEle
       </div>
     </div>
 
-    <div class="row" style="margin-top:14px;">
+    <div class="row resultonly" style="margin-top:14px;" hidden>
       <div class="field">
         <label for="fDong">읍면동</label>
         <select id="fDong"><option value="">전체</option></select>
@@ -265,12 +281,21 @@ try { if (/(?:^|[?&])embed=1(?:&|$)/.test(location.search)) document.documentEle
     </div>
   </section>
 
-  <div class="note" id="hint"><b>먼저 조회하세요</b><span>지역과 기간을 고르고 [조회]를 누르면 공공데이터에서 실제 거래를 불러옵니다.</span></div>
+  <div class="note" id="hint" hidden><b>불러오는 중</b><span></span></div>
   <div class="note err" id="err" hidden><b>읽지 못했습니다</b><span id="errText"></span></div>
 
-  <div class="ledger" id="ledger"></div>
+  <section class="startguide" id="startGuide">
+    <h2>세 번만 누르면 됩니다</h2>
+    <ol>
+      <li><span><b>지역</b>을 고릅니다. 목록에 없으면 법정동코드 5자리를 직접 넣으세요.</span></li>
+      <li><span><b>기준 월</b>과 <b>기간</b>을 정합니다. 처음이라면 최근 6개월로 시작하세요.</span></li>
+      <li><span><b>[조회]</b>를 누릅니다. 국토교통부 공공데이터에서 실제 거래를 불러옵니다.</span></li>
+    </ol>
+  </section>
 
-  <section class="card">
+  <div class="ledger resultonly" id="ledger" hidden></div>
+
+  <section class="card resultonly" hidden>
     <h2 id="t1">월별 평균 평당가</h2>
     <p class="sub">전용면적 기준 · 1평 = 3.3058㎡ · 단위 만원</p>
     <div class="chartbox">
@@ -279,7 +304,7 @@ try { if (/(?:^|[?&])embed=1(?:&|$)/.test(location.search)) document.documentEle
     </div>
   </section>
 
-  <section class="card">
+  <section class="card resultonly" hidden>
     <h2>월별 거래 건수</h2>
     <p class="sub">거래가 몰린 달과 끊긴 달을 같이 보세요</p>
     <div class="legend" id="legCount"></div>
@@ -289,7 +314,7 @@ try { if (/(?:^|[?&])embed=1(?:&|$)/.test(location.search)) document.documentEle
     </div>
   </section>
 
-  <section class="card">
+  <section class="card resultonly" hidden>
     <h2>지도에서 보기</h2>
     <p class="sub">원의 크기는 거래 건수, 색은 평균 평당가입니다. 원을 누르면 단지 요약이 나옵니다.</p>
     <div id="map"><div id="mapMsg">지도를 준비하고 있습니다…</div></div>
@@ -301,7 +326,7 @@ try { if (/(?:^|[?&])embed=1(?:&|$)/.test(location.search)) document.documentEle
     </div>
   </section>
 
-  <section class="card">
+  <section class="card resultonly" hidden>
     <h2>단지·건물별 순위</h2>
     <p class="sub">거래가 많은 순 · 상위 30곳 · 줄을 누르면 지도가 그 단지로 이동합니다</p>
     <div class="tablewrap">
@@ -314,7 +339,7 @@ try { if (/(?:^|[?&])embed=1(?:&|$)/.test(location.search)) document.documentEle
     </div>
   </section>
 
-  <section class="card">
+  <section class="card resultonly" hidden>
     <h2>AI에 넘길 브리핑</h2>
     <p class="sub">복사해서 제미나이·젬스 대화창에 붙여넣으세요. 표 전체 대신 요약 수치만 넘기면 AI가 훨씬 정확하게 답합니다.</p>
     <div class="row" style="margin-bottom:10px;"><button class="btn" id="copyBrief" type="button">브리핑 복사</button></div>
@@ -480,6 +505,7 @@ async function fetchApi(){
     return;
   }
   MODE = kind;
+  showResults(true);
   adopt(rows);
   $("hint").hidden = failed.length === 0;
   if (failed.length){
@@ -590,7 +616,7 @@ function readFile(f){
   if (!f) return;
   var fr = new FileReader();
   fr.onload = function(){
-    try { MODE = "trade"; adopt(parseCSV(decode(fr.result))); $("hint").hidden = true; }
+    try { MODE = "trade"; showResults(true); adopt(parseCSV(decode(fr.result))); $("hint").hidden = true; }
     catch(e){ showErr(e.message); }
   };
   fr.onerror = function(){ showErr("파일을 여는 중 문제가 생겼습니다."); };
@@ -917,6 +943,10 @@ function cell(k, v, u, s){
   return '<div class="cell"><div class="k">' + k + '</div><div class="v mono">' + v +
     '<span class="u">' + u + '</span></div><div class="s">' + s + "</div></div>";
 }
+function showResults(on){
+  [].forEach.call(document.querySelectorAll(".resultonly"), function(el){ el.hidden = !on; });
+  $("startGuide").hidden = !!on;
+}
 function render(){
   var rows = VIEW, ms = monthly(rows), pr = priceRows(rows);
   var last = ms.length ? ms[ms.length-1] : null;
@@ -1049,15 +1079,7 @@ $("copyBrief").addEventListener("click", function(){
 addEventListener("resize", function(){ if (VIEW.length) { drawPrice(monthly(VIEW)); drawCount(monthly(VIEW)); } });
 
 /* 첫 화면: 빈 차트 자리를 만들어 두고 지도 준비 */
-empty($("chartPrice"), "조회하면 여기에 추이가 그려집니다");
-empty($("chartCount"), "조회하면 여기에 건수가 그려집니다");
-$("ledger").innerHTML = [
-  cell("거래 건수","—","건","조회 전"),
-  cell("거래금액 중위값","—","","조회 전"),
-  cell("평균 평당가","—","만원","조회 전"),
-  cell("첫 달 대비","—","%","조회 전")
-].join("");
-$("brief").textContent = "조회하면 여기에 AI에 넘길 요약문이 만들어집니다.";
+showResults(false);
 
 var tries = 0;
 (function waitKakao(){
