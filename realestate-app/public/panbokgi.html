@@ -376,6 +376,12 @@ async function getJson(url){
   var j;
   try { j = JSON.parse(t); }
   catch(e3){
+    if (r.status === 404){
+      throw new Error("이 주소에는 공공데이터 서버가 없습니다 (404). 지금 열려 있는 주소는 "
+        + location.origin + " 입니다. 첨부파일 미리보기나 내려받은 파일이 아니라, "
+        + "배포된 사이트 주소(https://jrrsa.vercel.app/panbokgi.html)로 들어가서 조회해주세요. "
+        + "그 주소에서도 404가 나면 api 폴더에 파일이 제자리에 있는지 확인이 필요합니다.");
+    }
     throw new Error("서버가 JSON이 아닌 응답을 보냈습니다 (HTTP " + r.status + ") · " +
       t.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 120));
   }
