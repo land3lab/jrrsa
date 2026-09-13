@@ -305,7 +305,7 @@
    developers.kakao.com → 내 애플리케이션 → 앱 키 → JavaScript 키
    플랫폼 → Web → 사이트 도메인에 https://jrrsa.vercel.app 를 등록해야 지도가 뜹니다.
    ───────────────────────────────────────────── */
-var KAKAO_JS_KEY = "7fe34561d14e5646a4dd94d14492acc83";
+var KAKAO_JS_KEY = "7fe34561d14e5646a4dd94d14492acc8";
 </script>
 <script>
 (function(){
@@ -749,7 +749,11 @@ function saveCache(){ try { localStorage.setItem("panbokgi.geo", JSON.stringify(
 
 function initMap(){
   if (window.__kakaoFailed || !window.kakao || !window.kakao.maps){
-    $("mapMsg").innerHTML = "지도를 불러오지 못했습니다.<br>카카오 개발자 콘솔에서 <b>플랫폼 → Web → 사이트 도메인</b>에<br>이 사이트 주소가 등록되어 있는지 확인해주세요.";
+    $("mapMsg").innerHTML = "지도를 불러오지 못했습니다."
+      + "<br>카카오 개발자 콘솔 → 내 애플리케이션 → <b>앱 설정 → 플랫폼 → Web</b> 에"
+      + "<br>아래 주소가 <b>사이트 도메인</b>으로 등록되어 있는지,"
+      + "<br>그리고 <b>JavaScript 키</b>(32자리)가 맞는지 확인해주세요."
+      + '<br><br><b style="font-size:14px">' + esc(location.origin) + "</b>";
     return;
   }
   kakao.maps.load(function(){
@@ -786,7 +790,12 @@ function drawMap(cx){
   var maxN = cx.length ? cx[0].n : 1;
   var bounds = new kakao.maps.LatLngBounds();
   var done = 0, placed = 0;
-  function stat(){ $("geoStat").textContent = "지도 표시 " + placed + " / " + cx.length + "곳"; }
+  function stat(){
+    if (!placed && done >= cx.length && cx.length)
+      $("geoStat").innerHTML = "주소를 좌표로 바꾸지 못했습니다 — 카카오 콘솔에 " + esc(location.origin) + " 등록 여부를 확인해주세요.";
+    else
+      $("geoStat").textContent = "지도 표시 " + placed + " / " + cx.length + "곳";
+  }
   stat();
 
   function place(c, lat, lng){
@@ -816,6 +825,7 @@ function drawMap(cx){
   function next(i){
     if (token !== geoToken || i >= cx.length){
       if (token === geoToken && placed > 0) map.setBounds(bounds);
+      stat();
       return;
     }
     var c = cx[i];
