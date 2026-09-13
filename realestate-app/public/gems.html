@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>젬스 실습실 · 나폴길 AI 부동산 툴박스</title>
+<meta name="theme-color" content="#1F3352">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="description" content="제미나이 젬스 지침을 직접 만들어보고, 부동산 실무 프롬프트를 버튼 하나로 복사하는 실습 도구">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F1E6; --surface:#FFFFFF; --surface-2:#FBF7EE; --border:#DDD3BD; --border-soft:#E7DFC9;
+    --ink:#1B2233; --ink-soft:#4B5468; --ink-faint:#7B8296;
+    --navy:#1F3352; --navy-deep:#152238; --navy-tint:#E7ECF3;
+    --burgundy:#7D2E3A; --burgundy-soft:#A5525D; --burgundy-tint:#F4E6E7;
+    --gold:#A9812F; --gold-soft:#C9A45C; --gold-tint:#F3EAD2;
+    --good:#4D7A45; --good-bg:#E7EFE4;
+    --font-display:'Noto Serif KR', serif; --font-body:'Noto Sans KR', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  [hidden]{display:none !important;}
+  html,body{margin:0; padding:0;}
+  body{background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:14px; line-height:1.6; padding-bottom:48px;}
+  h1,h2,h3{font-family:var(--font-display); color:var(--navy); margin:0;}
+  a{color:inherit; text-decoration:none;}
+  input,select,button,textarea{font-family:var(--font-body); font-size:14px; color:var(--ink);}
+  :focus-visible{outline:2px solid var(--navy); outline-offset:2px;}
+
+  header{position:sticky; top:0; z-index:30; background:var(--navy); color:#EDE6D3; padding:12px 16px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px; box-shadow:0 2px 10px rgba(0,0,0,.15);}
+  header b{font-family:var(--font-display); font-size:15px; color:#fff;}
+  header span{font-size:10.5px; color:var(--gold-soft); display:block;}
+  header .links{display:flex; gap:6px; flex:0 0 auto;}
+  header a.chip{font-size:11.5px; color:#C9D4E4; border:1px solid #3A4E6E; border-radius:999px; padding:6px 11px; white-space:nowrap;}
+  header a.chip:hover{background:#2B3F60;}
+
+  nav.tabs{display:flex; gap:5px; overflow-x:auto; background:var(--surface); border-bottom:1px solid var(--border);
+    padding:9px 12px; position:sticky; top:52px; z-index:29;}
+  nav.tabs button{flex:0 0 auto; background:var(--surface-2); color:var(--ink-soft); font-weight:700; font-size:12.5px;
+    padding:8px 14px; border-radius:999px; cursor:pointer; border:1px solid var(--border-soft); white-space:nowrap;}
+  nav.tabs button.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  .wrap{max-width:1000px; margin:0 auto; padding:16px 14px 0;}
+  .panel{display:none;} .panel.active{display:block;}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px;}
+  .card > h2{font-size:16px; margin-bottom:3px;}
+  .card .sub{font-size:12.5px; color:var(--ink-soft); margin:0 0 12px;}
+  .lead{font-size:13.5px; color:var(--ink-soft); margin:0 0 14px;}
+
+  .btn{background:var(--navy); color:#fff; border:1px solid var(--navy); border-radius:9px;
+    padding:8px 15px; font-weight:700; font-size:13px; cursor:pointer; white-space:nowrap;}
+  .btn:hover{background:var(--navy-deep);}
+  .btn.sm{padding:6px 12px; font-size:12px; border-radius:8px;}
+  .btn.ghost{background:var(--surface-2); color:var(--ink-soft); border-color:var(--border);}
+  .btn.ghost:hover{background:var(--gold-tint); color:var(--ink);}
+  .btn.on{background:var(--good); border-color:var(--good);}
+
+  /* ── 단계 ── */
+  ol.steps{list-style:none; margin:0; padding:0; counter-reset:s;}
+  ol.steps li{counter-increment:s; display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--border-soft);}
+  ol.steps li:last-child{border-bottom:0;}
+  ol.steps li::before{content:counter(s); flex:0 0 26px; height:26px; border-radius:50%; background:var(--burgundy);
+    color:#fff; font-weight:700; font-size:12.5px; display:flex; align-items:center; justify-content:center; margin-top:1px;}
+  ol.steps .t{flex:1 1 auto; min-width:0;}
+  ol.steps .t b{display:block; font-size:14px;}
+  ol.steps .t span{font-size:12.5px; color:var(--ink-soft);}
+  ol.steps input[type=checkbox]{flex:0 0 auto; width:18px; height:18px; accent-color:var(--good); margin-top:4px; cursor:pointer;}
+  li.done .t b{color:var(--ink-faint); text-decoration:line-through;}
+
+  .four{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:4px;}
+  .four .b{background:var(--navy); color:#fff; border-radius:11px; padding:13px 14px;}
+  .four .b i{font-style:normal; font-size:10.5px; letter-spacing:.09em; color:var(--gold-soft); font-weight:700;}
+  .four .b b{display:block; font-size:14px; margin-top:3px;}
+  .four .b span{display:block; font-size:11.5px; color:#A9B6C8; margin-top:3px; line-height:1.5;}
+
+  /* ── 생성기 ── */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;}
+  .field{display:flex; flex-direction:column; gap:5px; margin-bottom:12px;}
+  .field label{font-size:10.5px; letter-spacing:.08em; color:var(--ink-faint); font-weight:700;}
+  .field select,.field input[type=text]{background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:8px 10px;}
+  .checks{display:flex; flex-direction:column; gap:7px;}
+  .checks label{display:flex; gap:8px; align-items:flex-start; font-size:13px; cursor:pointer; line-height:1.45;}
+  .checks input{width:16px; height:16px; accent-color:var(--burgundy); margin-top:2px; flex:0 0 auto;}
+  .hint{font-size:11.5px; color:var(--ink-faint); margin-top:6px;}
+
+  pre.out{margin:0; padding:14px; background:var(--navy-deep); color:#DDE5F0; border-radius:11px;
+    max-height:480px; overflow:auto; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:12px; line-height:1.75; white-space:pre-wrap; word-break:break-word;}
+  .outhead{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px; flex-wrap:wrap;}
+  .outhead h3{font-size:14px;}
+
+  /* ── 프롬프트 모음 ── */
+  .toolbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px;}
+  .toolbar input[type=text]{flex:1 1 200px; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:9px 12px;}
+  .chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .chips button{background:var(--surface); border:1px solid var(--border-soft); color:var(--ink-soft);
+    font-size:12px; font-weight:600; padding:6px 12px; border-radius:999px; cursor:pointer;}
+  .chips button.active{background:var(--burgundy); color:#fff; border-color:var(--burgundy);}
+
+  .pgroup{margin-bottom:20px;}
+  .pgroup > h3{font-size:14.5px; margin-bottom:3px;}
+  .pgroup > p{font-size:12.5px; color:var(--ink-soft); margin:0 0 10px;}
+  .p{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:13px 15px; margin-bottom:9px;}
+  .p .ph{display:flex; gap:10px; align-items:flex-start; justify-content:space-between;}
+  .p .pt{flex:1 1 auto; min-width:0;}
+  .p .pt b{display:block; font-size:13.5px; color:var(--navy);}
+  .p .pt p{margin:6px 0 0; font-size:13px; color:var(--ink-soft); white-space:pre-wrap; line-height:1.65;}
+  .p .why{margin-top:8px; font-size:11.5px; color:var(--ink-faint); border-top:1px dashed var(--border-soft); padding-top:7px;}
+  .empty{padding:24px; text-align:center; color:var(--ink-faint); font-size:13px;}
+
+  .note{display:flex; gap:8px; align-items:baseline; padding:10px 14px; border-radius:0 9px 9px 0;
+    border-left:3px solid var(--gold); background:var(--gold-tint); font-size:12.5px; color:var(--ink-soft); margin:0 0 14px;}
+  .note b{color:var(--gold); white-space:nowrap;}
+  .note.good{border-left-color:var(--good); background:var(--good-bg);} .note.good b{color:var(--good);}
+
+
+  /* ── 도구 사이 이동 ── */
+  nav.jump{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px;}
+  nav.jump a{flex:1 1 160px; display:flex; align-items:center; justify-content:center; gap:7px;
+    background:var(--surface); border:1px solid var(--border); border-radius:11px;
+    padding:12px 14px; font-weight:700; font-size:13.5px; color:var(--navy); text-align:center;
+    box-shadow:0 1px 2px rgba(27,34,51,.05);}
+  nav.jump a:hover{background:var(--gold-tint); border-color:var(--gold-soft);}
+  nav.jump a.cur{background:var(--navy); border-color:var(--navy); color:#fff; cursor:default;}
+  nav.jump a.cur:hover{background:var(--navy);}
+  nav.jump.bottom{margin:22px 0 0;}
+
+  footer{max-width:1000px; margin:20px auto 0; padding:14px; font-size:11.5px; color:var(--ink-faint); line-height:1.7;}
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(14px); opacity:0;
+    background:var(--navy-deep); color:#fff; font-size:13px; font-weight:600; padding:10px 20px; border-radius:999px;
+    box-shadow:0 6px 20px rgba(0,0,0,.25); pointer-events:none; transition:opacity .18s, transform .18s; z-index:60;}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:760px){ .grid2{grid-template-columns:1fr;} .four{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:430px){ .four{grid-template-columns:1fr;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div><b>🤖 젬스 실습실</b><span>지침 만들기 · 프롬프트 모음</span></div>
+  <div class="links">
+    <a class="chip" href="/panbokgi.html">판독기</a>
+    <a class="chip" href="/">← 툴박스</a>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="active" data-p="p-make">젬스 만들기</button>
+  <button data-p="p-gen">지침 생성기</button>
+  <button data-p="p-lib">프롬프트 모음</button>
+</nav>
+
+<main class="wrap">
+
+  <nav class="jump">
+    <a href="/"><span>🏠</span> 툴박스</a>
+    <a href="/panbokgi.html"><span>📈</span> 실거래 판독기</a>
+    <a href="/gems.html" class="cur"><span>🤖</span> 젬스 실습실</a>
+  </nav>
+
+
+  <!-- ══════════ 1. 젬스 만들기 ══════════ -->
+  <section class="panel active" id="p-make">
+    <div class="card">
+      <h2>여섯 번 누르면 도구 하나</h2>
+      <p class="sub">제미나이에서 Gem을 만드는 순서입니다. 하나씩 하면서 체크하세요 — 이 화면을 닫았다 다시 열어도 체크가 남아 있습니다.</p>
+      <ol class="steps" id="steps"></ol>
+      <div class="toolbar" style="margin:14px 0 0;">
+        <button class="btn ghost sm" id="resetSteps" type="button">체크 지우기</button>
+        <span class="hint" id="stepStat"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>지침에 꼭 들어갈 네 가지</h2>
+      <p class="sub">지침은 신입 직원에게 주는 업무 매뉴얼입니다. 이 네 가지가 들어가면 결과가 흔들리지 않습니다.</p>
+      <div class="four">
+        <div class="b"><i>1</i><b>너는 누구다</b><span>역할을 정해준다</span></div>
+        <div class="b"><i>2</i><b>무엇을 받는다</b><span>입력과 첨부 자료</span></div>
+        <div class="b"><i>3</i><b>하면 안 되는 것</b><span>지어내기·단정 금지</span></div>
+        <div class="b"><i>4</i><b>어떤 형식으로</b><span>제목과 순서를 통째로</span></div>
+      </div>
+      <div class="note" style="margin-top:14px;"><b>다음 단계</b><span>[지침 생성기] 탭에서 이 네 가지를 골라 넣으면 지침문이 자동으로 만들어집니다.</span></div>
+    </div>
+
+    <div class="card">
+      <h2>만들고 나서 꼭 해볼 세 가지</h2>
+      <p class="sub">여기까지 해야 쓸 만한 도구가 됩니다.</p>
+      <ol class="steps" id="tests"></ol>
+    </div>
+  </section>
+
+  <!-- ══════════ 2. 지침 생성기 ══════════ -->
+  <section class="panel" id="p-gen">
+    <p class="lead">아래 항목을 고르면 오른쪽에 지침문이 실시간으로 만들어집니다. 다 고른 뒤 [지침 복사]를 눌러 제미나이 Gem의 <b>지침</b> 칸에 붙여넣으세요.</p>
+    <div class="grid2">
+      <div>
+        <div class="card">
+          <h2>무엇을 만들까</h2>
+          <div class="field">
+            <label for="gType">도구 종류</label>
+            <select id="gType">
+              <option value="apt">아파트 단지 분석글</option>
+              <option value="redev">재개발 구역 빌라 분석글</option>
+              <option value="rent">전월세 시세 브리핑</option>
+              <option value="listing">매물 소개글</option>
+              <option value="free">직접 정하기</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="gName">Gem 이름</label>
+            <input type="text" id="gName" placeholder="예: 단지 브리핑 작가">
+          </div>
+          <div class="field">
+            <label for="gRole">역할 (너는 누구다)</label>
+            <input type="text" id="gRole" placeholder="예: 20년 경력의 공인중개사이자 부동산 애널리스트">
+          </div>
+          <div class="field">
+            <label for="gArea">주로 다룰 지역 <span style="font-weight:400">(비워도 됩니다)</span></label>
+            <input type="text" id="gArea" placeholder="예: 서울 중랑구">
+          </div>
+          <div class="field">
+            <label for="gTone">말투</label>
+            <select id="gTone">
+              <option value="plain">평서체 (~다) · 보고서 느낌</option>
+              <option value="polite">존댓말 (~습니다) · 손님에게 바로</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>하면 안 되는 것</h2>
+          <p class="sub">AI가 사고 치는 지점을 미리 막습니다. 전부 켜두시길 권합니다.</p>
+          <div class="checks" id="gRules"></div>
+        </div>
+
+        <div class="card">
+          <h2>출력 형식</h2>
+          <p class="sub">결과 글에 들어갈 항목입니다. 순서대로 나옵니다.</p>
+          <div class="checks" id="gParts"></div>
+          <div class="hint">종류를 바꾸면 그 종류에 맞는 항목이 자동으로 다시 선택됩니다.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card" style="position:sticky; top:110px;">
+          <div class="outhead">
+            <h3>만들어진 지침</h3>
+            <div style="display:flex; gap:6px;">
+              <button class="btn sm" id="copyGem" type="button">지침 복사</button>
+              <button class="btn ghost sm" id="saveGem" type="button">저장</button>
+            </div>
+          </div>
+          <pre class="out" id="gemOut"></pre>
+          <div class="toolbar" style="margin:12px 0 0;">
+            <button class="btn ghost sm" id="copyName" type="button">이름만 복사</button>
+            <button class="btn ghost sm" id="loadGem" type="button">저장한 것 불러오기</button>
+          </div>
+          <div class="note good" style="margin:12px 0 0;"><b>붙여넣을 곳</b><span>제미나이 → Gem 관리자 → 새로 만들기 → <b>지침</b> 칸</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 3. 프롬프트 모음 ══════════ -->
+  <section class="panel" id="p-lib">
+    <p class="lead">제미나이에 그대로 붙여넣는 질문들입니다. 위에서부터 순서대로 던지면 앞의 답이 뒤 질문의 재료가 됩니다.</p>
+    <div class="toolbar">
+      <input type="text" id="q" placeholder="찾을 말 입력 (예: 평당가, 대지지분)" autocomplete="off">
+      <div class="chips" id="cats"></div>
+    </div>
+    <div id="lib"></div>
+    <div class="empty" id="libEmpty" hidden>찾는 말이 들어간 프롬프트가 없습니다.</div>
+  </section>
+  <nav class="jump bottom">
+    <a href="/"><span>🏠</span> 툴박스</a>
+    <a href="/panbokgi.html"><span>📈</span> 실거래 판독기</a>
+    <a href="/gems.html" class="cur"><span>🤖</span> 젬스 실습실</a>
+  </nav>
+</main>
+
+<footer>
+  이 페이지의 프롬프트는 국토교통부 실거래 자료를 제미나이에 올려 쓰는 것을 전제로 합니다.<br>
+  AI가 내놓은 수치는 반드시 원자료로 검산한 뒤 상담에 쓰세요. 체크 표시와 저장한 지침은 이 브라우저에만 남습니다.
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+var $ = function(id){ return document.getElementById(id); };
+var LS = {
+  get:function(k,d){ try{ var v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } },
+  set:function(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];
+  });
+}
+var toastT = null;
+function toast(msg){
+  var t = $("toast");
+  t.textContent = msg;
+  t.classList.add("on");
+  clearTimeout(toastT);
+  toastT = setTimeout(function(){ t.classList.remove("on"); }, 1700);
+}
+function copy(text, okMsg){
+  function fallback(){
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;top:-1000px;left:0;opacity:0;";
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch(e){}
+    document.body.removeChild(ta);
+    toast(ok ? (okMsg || "복사했습니다") : "복사가 막혔습니다 — 글자를 직접 선택해 주세요");
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(function(){ toast(okMsg || "복사했습니다"); }, fallback);
+  } else fallback();
+}
+
+/* ══════════ 탭 ══════════ */
+$("tabs").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-p]");
+  if (!b) return;
+  [].forEach.call(this.querySelectorAll("button"), function(x){ x.classList.toggle("active", x === b); });
+  [].forEach.call(document.querySelectorAll(".panel"), function(p){ p.classList.toggle("active", p.id === b.dataset.p); });
+  window.scrollTo({ top:0, behavior:"instant" in document.body.style ? "instant" : "auto" });
+});
+
+/* ══════════ 1. 단계 체크리스트 ══════════ */
+var STEPS = [
+  ["Gem 관리자를 연다", "제미나이 왼쪽 메뉴 아래쪽에 있습니다."],
+  ["[새로 만들기]를 누른다", "버튼 한 번이면 빈 Gem이 생깁니다."],
+  ["이름을 적는다", "나중에 목록에서 알아볼 이름으로. 예: 단지 브리핑 작가"],
+  ["지침을 붙여넣는다", "여기가 전부입니다. [지침 생성기] 탭에서 만들어 복사해 오세요."],
+  ["지식에 CSV를 올린다", "실거래가 파일을 올리면 대화를 새로 열어도 계속 붙어 있습니다."],
+  ["저장하고 미리보기에서 시험한다", "오른쪽 창에 단지명 한 단어만 넣어보세요."]
+];
+var TESTS = [
+  ["엉뚱한 걸 물어본다", "\"이 단지 내년 가격 얼마야?\" → \"자료에 없음\"이라고 답하면 합격입니다."],
+  ["다른 지역을 넣어본다", "지역만 바꿔도 같은 형식으로 나오는지 확인하세요."],
+  ["지침을 한 줄 고쳐본다", "출력 항목을 하나 더 넣고 결과가 바뀌는지 보세요. 젬스는 이렇게 키웁니다."]
+];
+function renderList(el, items, key){
+  var state = LS.get(key, {});
+  el.innerHTML = items.map(function(s, i){
+    var on = !!state[i];
+    return '<li class="' + (on ? "done" : "") + '">'
+      + '<input type="checkbox" data-i="' + i + '"' + (on ? " checked" : "") + '>'
+      + '<div class="t"><b>' + esc(s[0]) + "</b><span>" + esc(s[1]) + "</span></div></li>";
+  }).join("");
+  el.onchange = function(e){
+    var cb = e.target.closest("input[type=checkbox]");
+    if (!cb) return;
+    var st = LS.get(key, {});
+    st[cb.dataset.i] = cb.checked;
+    LS.set(key, st);
+    cb.closest("li").classList.toggle("done", cb.checked);
+    stepStat();
+  };
+}
+function stepStat(){
+  var st = LS.get("gems.steps", {});
+  var n = STEPS.filter(function(_, i){ return st[i]; }).length;
+  $("stepStat").textContent = n + " / " + STEPS.length + " 단계 완료" + (n === STEPS.length ? " — 다 하셨습니다" : "");
+}
+renderList($("steps"), STEPS, "gems.steps");
+renderList($("tests"), TESTS, "gems.tests");
+stepStat();
+$("resetSteps").addEventListener("click", function(){
+  LS.set("gems.steps", {}); LS.set("gems.tests", {});
+  renderList($("steps"), STEPS, "gems.steps");
+  renderList($("tests"), TESTS, "gems.tests");
+  stepStat();
+  toast("체크를 지웠습니다");
+});
+
+/* ══════════ 2. 지침 생성기 ══════════ */
+var RULES = [
+  ["nomake", "자료에 없는 숫자는 절대 지어내지 말고 \"자료에 없음\"이라고 쓴다", true],
+  ["cancel", "해제사유발생일이 있는 거래(취소 거래)는 빼고 계산한다", true],
+  ["pyeong", "평당가는 전용면적 기준으로 계산하고 그 기준을 밝힌다 (1평 = 3.3058㎡)", true],
+  ["noad", "\"무조건 오른다\", \"지금이 마지막 기회\" 같은 단정·권유 표현을 쓰지 않는다", true],
+  ["cond", "전망은 \"이런 조건이면 이렇게 볼 수 있다\" 형태의 조건부로만 쓴다", true],
+  ["source", "숫자를 쓸 때마다 어느 자료의 몇 행에서 나왔는지 말할 수 있어야 한다", false],
+  ["ask", "판단에 필요한 정보가 빠졌으면 지어내지 말고 사용자에게 되묻는다", true],
+  ["easy", "어려운 용어를 쓰면 괄호 안에 쉬운 말로 풀어 쓴다", false]
+];
+var PARTS = {
+  apt: [
+    ["summary","한눈에 보기 (3문장 이내)",true],
+    ["basic","기본 정보 — 위치 / 준공 / 세대수 / 동수 / 주력 평형",true],
+    ["trend","최근 거래 흐름 — 기간·건수, 평균·중위 금액, 평균 평당가, 첫 달 대비 변화율, 월별 표",true],
+    ["size","평형별 차이 — 전용면적 구간별 평당가와 거래 빈도",true],
+    ["compare","주변 단지와 비교 — 같은 동·구 안에서의 평당가 서열",true],
+    ["check","이 단지를 볼 때 확인할 것 3가지",true],
+    ["script","손님에게 그대로 말할 수 있는 문장 3개",true],
+    ["risk","눈여겨볼 위험 요인",false]
+  ],
+  redev: [
+    ["zone","구역 개요 — 위치(법정동·지번 일대) / 사업 방식 / 현재 단계 / 예정 세대수",true],
+    ["trend","거래 흐름 — 기간, 건수, 중위 거래금액, 거래가 늘거나 줄어든 시점",true],
+    ["land","대지지분이 가격을 어떻게 가르는가 — 평당 대지지분가 분포와 같은 값이라도 무엇이 다른지",true],
+    ["stock","지금 시장에 나오는 물건의 성격 — 건축년도·전용면적 분포",true],
+    ["docs","매수 전 확인할 것 — 등기부에서 볼 것 / 조합에서 받을 것 / 구청에서 볼 것",true],
+    ["risk","위험 요인 3가지 — 무엇이 위험한가 / 어떻게 확인하나",true],
+    ["script","손님에게 그대로 말할 수 있는 문장 3개",true],
+    ["unknown","이 자료만으로는 알 수 없는 항목과 확인처",true]
+  ],
+  rent: [
+    ["summary","한눈에 보기 (3문장 이내)",true],
+    ["trend","전세 보증금 평당가 월별 추이와 방향",true],
+    ["mix","전세와 월세의 비중, 그 비중이 달라진 시점",true],
+    ["size","평형별 보증금·월세 수준",true],
+    ["ratio","매매가 대비 전세가 수준 (매매 자료가 함께 있을 때만)",false],
+    ["check","임대차 상담 시 확인할 것 3가지",true],
+    ["script","손님에게 그대로 말할 수 있는 문장 3개",true]
+  ],
+  listing: [
+    ["hook","첫 문장 — 이 매물의 가장 큰 장점 한 가지",true],
+    ["spec","기본 정보 — 면적 / 층 / 방향 / 준공 / 관리비",true],
+    ["around","주변 환경 — 교통, 학교, 생활시설 (사실만)",true],
+    ["price","가격의 근거 — 같은 단지 최근 실거래와 비교",true],
+    ["who","이런 분께 맞습니다 — 두세 줄",true],
+    ["honest","단점도 한 가지 솔직하게",true]
+  ],
+  free: [
+    ["summary","한눈에 보기 (3문장 이내)",true],
+    ["body","본문",true],
+    ["check","확인할 것 3가지",true],
+    ["script","손님에게 말할 문장 3개",true]
+  ]
+};
+var PRESET = {
+  apt:    { name:"단지 브리핑 작가", role:"20년 경력의 공인중개사이자 부동산 애널리스트",
+            input:"단지명(또는 \"○○구 ○○동\")과 첨부된 실거래가 자료",
+            task:"손님에게 아파트 단지 하나를 설명하는 브리핑 글을 쓴다",
+            extra:"사용자가 단지명만 말하면, 첨부 자료에서 그 단지만 골라내어 분석한다." },
+  redev:  { name:"재개발 구역 브리핑 작가", role:"재개발 정비사업을 20년간 다뤄온 공인중개사",
+            input:"구역명 또는 \"○○동 ○○번지 일대\"와 첨부된 연립다세대 실거래가 자료",
+            task:"재개발 구역 안의 빌라(연립·다세대) 거래를 분석해 매수 검토용 브리핑을 쓴다",
+            extra:"재개발 빌라는 \"집값\"이 아니라 \"입주권 값\"으로 거래된다. 대지지분이 가격을 가르는 가장 큰 변수이므로,\n대지권면적이 있으면 평당 대지지분가 = 거래금액 ÷ (대지권면적 ÷ 3.3058) 을 반드시 계산한다.\n없으면 \"대지권면적 미제공 — 등기부로 확인 필요\"라고 쓴다.\n전용면적당 가격만 보면 왜곡된다는 점을 명시한다.\n감정평가액·권리가액·추가분담금은 자료에 없는 값이다. 절대 추정하지 말고 \"조합 자료로 확인 필요\"로 표기한다.\n사업 단계는 사용자가 알려주지 않으면 묻는다. 임의로 단정하지 않는다." },
+  rent:   { name:"전월세 브리핑 작가", role:"임대차 상담을 오래 해온 공인중개사",
+            input:"지역명 또는 단지명과 첨부된 아파트 전월세 실거래가 자료",
+            task:"전월세 시세 흐름을 정리해 임대인·임차인 상담용 브리핑을 쓴다",
+            extra:"월세 건은 보증금만으로 평당가를 내면 왜곡되므로 평당가 계산에서 제외하고, 제외했다는 사실을 밝힌다.\n전세와 월세를 반드시 나눠서 설명한다." },
+  listing:{ name:"매물 소개글 작가", role:"매물의 장점을 과장 없이 전하는 공인중개사",
+            input:"매물 기본 정보(면적·층·방향·가격)와 필요하면 주변 실거래가 자료",
+            task:"공고에 그대로 올릴 수 있는 매물 소개글을 쓴다",
+            extra:"확인되지 않은 개발 호재나 수익률을 쓰지 않는다. 공인중개사법상 과장광고가 되지 않도록 사실과 해석을 구분한다." },
+  free:   { name:"", role:"", input:"사용자가 주는 내용과 첨부 자료", task:"", extra:"" }
+};
+
+function drawChecks(el, items, key){
+  el.innerHTML = items.map(function(it){
+    return '<label><input type="checkbox" data-k="' + it[0] + '"' + (it[2] ? " checked" : "") + "> <span>" + esc(it[1]) + "</span></label>";
+  }).join("");
+}
+function picked(el){
+  return [].filter.call(el.querySelectorAll("input[type=checkbox]"), function(c){ return c.checked; })
+           .map(function(c){ return c.dataset.k; });
+}
+function buildGem(){
+  var type = $("gType").value;
+  var preset = PRESET[type];
+  var name = $("gName").value.trim() || preset.name || "이름 없는 Gem";
+  var role = $("gRole").value.trim() || preset.role || "부동산 실무 전문가";
+  var area = $("gArea").value.trim();
+  var polite = $("gTone").value === "polite";
+
+  var onRules = picked($("gRules"));
+  var ruleText = RULES.filter(function(r){ return onRules.indexOf(r[0]) >= 0; }).map(function(r){ return r[1]; });
+  ruleText.push(polite
+    ? "모든 문장을 한국어 존댓말(~습니다)로 쓰고, 손님에게 그대로 읽어줄 수 있을 만큼 쉬운 말을 쓴다."
+    : "모든 문장을 한국어 평서체(~다)로 쓰고, 중개사가 손님에게 그대로 읽어줄 수 있을 만큼 쉬운 말을 쓴다.");
+
+  var onParts = picked($("gParts"));
+  var partText = (PARTS[type] || []).filter(function(p){ return onParts.indexOf(p[0]) >= 0; }).map(function(p){ return p[1]; });
+
+  var L = [];
+  L.push("너는 " + role + "다.");
+  L.push(preset.task ? preset.task + "." : "사용자가 요청한 부동산 분석 글을 쓴다.");
+  if (area) L.push("주로 " + area + " 지역을 다룬다. 다른 지역을 물으면 그 지역으로 바꿔 분석한다.");
+  L.push("");
+  L.push("[사용자가 주는 것]");
+  L.push("- " + preset.input);
+  if (preset.extra) { L.push(""); L.push("[이 일에서 특히 중요한 것]"); L.push(preset.extra); }
+  L.push("");
+  L.push("[반드시 지킬 규칙]");
+  ruleText.forEach(function(t, i){ L.push((i+1) + ". " + t); });
+  L.push("");
+  L.push("[출력 형식 — 이 순서와 제목을 그대로 쓴다]");
+  L.push("");
+  L.push("# {대상 이름} " + (type === "listing" ? "매물 소개" : "브리핑"));
+  partText.forEach(function(t, i){ L.push(""); L.push("## " + (i+1) + ". " + t); });
+  L.push("");
+  L.push("---");
+  L.push("자료 출처: 국토교통부 실거래가 공개시스템. 취소 거래 제외. 전용면적 기준.");
+  return { name:name, text:L.join("\n") };
+}
+function refresh(){
+  var g = buildGem();
+  $("gemOut").textContent = g.text;
+}
+function applyType(){
+  var t = $("gType").value, preset = PRESET[t];
+  drawChecks($("gParts"), PARTS[t] || []);
+  if (!$("gName").value.trim() || $("gName").dataset.auto === "1"){
+    $("gName").value = preset.name; $("gName").dataset.auto = "1";
+  }
+  if (!$("gRole").value.trim() || $("gRole").dataset.auto === "1"){
+    $("gRole").value = preset.role; $("gRole").dataset.auto = "1";
+  }
+  refresh();
+}
+drawChecks($("gRules"), RULES);
+$("gType").addEventListener("change", applyType);
+["gName","gRole","gArea"].forEach(function(id){
+  $(id).addEventListener("input", function(){ this.dataset.auto = "0"; refresh(); });
+});
+$("gTone").addEventListener("change", refresh);
+$("gRules").addEventListener("change", refresh);
+$("gParts").addEventListener("change", refresh);
+applyType();
+
+$("copyGem").addEventListener("click", function(){ copy(buildGem().text, "지침을 복사했습니다"); });
+$("copyName").addEventListener("click", function(){ copy(buildGem().name, "이름을 복사했습니다"); });
+$("saveGem").addEventListener("click", function(){
+  var g = buildGem();
+  LS.set("gems.saved", { name:g.name, text:g.text, at:Date.now(),
+    form:{ type:$("gType").value, name:$("gName").value, role:$("gRole").value, area:$("gArea").value, tone:$("gTone").value } });
+  toast("이 브라우저에 저장했습니다");
+});
+$("loadGem").addEventListener("click", function(){
+  var s = LS.get("gems.saved", null);
+  if (!s){ toast("저장해둔 지침이 없습니다"); return; }
+  $("gType").value = s.form.type; applyType();
+  $("gName").value = s.form.name; $("gName").dataset.auto = "0";
+  $("gRole").value = s.form.role; $("gRole").dataset.auto = "0";
+  $("gArea").value = s.form.area;
+  $("gTone").value = s.form.tone;
+  refresh();
+  toast("저장한 지침을 불러왔습니다");
+});
+
+/* ══════════ 3. 프롬프트 모음 ══════════ */
+var LIB = [
+  { cat:"시작", title:"올린 자료부터 확인하기",
+    text:"올린 파일이 각각 어떤 자료인지, 기간과 건수를 표로 정리해 줘. 열 이름도 그대로 보여줘.",
+    why:"AI가 자료를 제대로 읽었는지 먼저 확인하는 단계입니다. 여기서 건수가 틀리면 뒤 답도 다 틀립니다." },
+  { cat:"시작", title:"계산 기준 못 박기",
+    text:"앞으로 평당가는 전용면적 기준으로, 1평 = 3.3058㎡로 계산해 줘. 해제사유발생일이 있는 거래는 모두 빼고 계산해 줘. 이 두 가지를 이 대화 끝까지 지켜 줘.",
+    why:"기준을 먼저 못 박지 않으면 답마다 숫자가 달라집니다." },
+  { cat:"시작", title:"자료 범위 확인",
+    text:"이 자료에 없는 항목이 무엇인지 목록으로 알려 줘. 내가 물어볼 만한 것 중에 이 자료로는 답할 수 없는 것도 같이 짚어 줘.",
+    why:"AI가 무엇을 모르는지 먼저 알아두면 나중에 지어낸 답에 속지 않습니다." },
+
+  { cat:"아파트", title:"서울시 기준선 만들기",
+    text:"서울시 전체 아파트의 월별 평균 평당가를 표로 만들어 줘. 해제사유발생일이 있는 거래는 빼고 계산해.",
+    why:"우리 동네만 보면 잘한 건지 못한 건지 모릅니다. 비교할 기준선을 먼저 만듭니다." },
+  { cat:"아파트", title:"우리 단지와 나란히 놓기",
+    text:"같은 방식으로 {단지명}의 월별 평균 평당가를 내고, 서울시 평균과 나란히 놓은 표를 만들어 줘.",
+    why:"두 곡선을 같은 표에 놓아야 차이가 보입니다." },
+  { cat:"아파트", title:"갈라지는 지점 찾기",
+    text:"두 곡선의 방향이 갈라지는 시점이 있으면 언제인지 짚어 줘. 그 달에 무슨 일이 있었는지는 이 자료로 알 수 없다고 명시해 줘.",
+    why:"변곡점은 사실, 그 이유는 추측입니다. 둘을 섞지 않게 합니다." },
+  { cat:"아파트", title:"평형별로 나눠 보기",
+    text:"이 단지에서 전용면적 구간별(60㎡ 이하 / 60~85㎡ / 85㎡ 초과)로 평당가가 어떻게 다른지, 어느 평형이 잘 거래되는지 정리해 줘.",
+    why:"같은 단지라도 평형에 따라 시장이 다릅니다." },
+  { cat:"아파트", title:"층수와 가격의 관계",
+    text:"층수와 거래금액 사이에 관계가 보이는지, 보인다면 얼마나 차이 나는지 숫자로 말해 줘. 관계가 약하면 약하다고 말해 줘.",
+    why:"\"저층이라 싸다\"는 말을 숫자로 확인합니다." },
+  { cat:"아파트", title:"동네 안 순위 매기기",
+    text:"{구 이름} 안에서 거래가 많았던 아파트 상위 10곳을 평균 평당가와 함께 표로 만들어 줘.",
+    why:"단지 하나만 봐서는 비싼 건지 싼 건지 알 수 없습니다." },
+  { cat:"아파트", title:"우리 단지의 자리",
+    text:"그 순위에서 {단지명}이 몇 번째이고, 바로 위아래 단지와 무엇이 다른지 자료에 있는 항목(준공연도·면적·거래건수)만으로 설명해 줘.",
+    why:"서열의 이유를 자료 안에서만 찾게 합니다." },
+  { cat:"아파트", title:"거래량과 가격 같이 보기",
+    text:"거래 건수가 갑자기 늘거나 줄어든 달을 찾아 주고, 그때 가격이 같이 움직였는지 반대로 움직였는지 말해 줘.",
+    why:"거래량은 가격보다 먼저 움직이는 경우가 많습니다." },
+  { cat:"아파트", title:"5분 설명 대본으로",
+    text:"지금까지 나온 내용을 손님에게 5분간 설명할 수 있는 대본으로 바꿔 줘. 자료에 없는 숫자는 쓰지 말고, 모르는 건 모른다고 써 줘.",
+    why:"분석은 말로 옮겨야 현장에서 쓰입니다." },
+
+  { cat:"재개발 빌라", title:"대지지분 단가 계산시키기",
+    text:"이 자료에 대지권면적 열이 있는지 확인하고, 있으면 평당 대지지분가 = 거래금액 ÷ (대지권면적 ÷ 3.3058) 로 계산해서 표로 만들어 줘.",
+    why:"재개발 빌라의 진짜 가격표는 대지지분 단가입니다." },
+  { cat:"재개발 빌라", title:"두 기준 비교하기",
+    text:"전용면적 기준 평당가와 대지지분 기준 평당가를 같은 표에 놓고, 순위가 뒤바뀌는 물건이 있으면 짚어 줘.",
+    why:"전용면적만 보면 좋은 물건을 놓칩니다. 뒤바뀌는 지점이 핵심입니다." },
+  { cat:"재개발 빌라", title:"구역 안팎 나눠 보기",
+    text:"{법정동} 전체와 {구역명}({지번} 일대) 거래를 나눠서 중위 거래금액과 대지지분 단가를 비교해 줘.",
+    why:"구역 지정 프리미엄이 얼마나 붙었는지 보입니다." },
+  { cat:"재개발 빌라", title:"서울 전체와 견주기",
+    text:"서울시 전체 빌라 중위가와 비교하면 이 동네는 어디쯤인지 말해 줘.",
+    why:"동네 안에서만 보면 전체 시장에서의 위치를 놓칩니다." },
+  { cat:"재개발 빌라", title:"물건의 성격 파악",
+    text:"거래된 건물의 건축년도 분포를 보여 주고, 신축 빌라와 노후 다세대의 가격 성격이 어떻게 다른지 자료 안에서 설명해 줘.",
+    why:"신축 빌라는 재개발 가치보다 건물값이 붙어 있어 성격이 다릅니다." },
+  { cat:"재개발 빌라", title:"알 수 없는 것 목록화",
+    text:"이 자료만으로는 알 수 없는 항목(감정평가액, 권리가액, 추가분담금, 조합원 지위 양도 가능 여부)을 목록으로 정리해 주고, 각각 어디서 확인해야 하는지 알려 줘.",
+    why:"이 네 가지를 AI가 숫자로 말하면 그건 지어낸 겁니다." },
+  { cat:"재개발 빌라", title:"등기부 체크리스트",
+    text:"매수 검토자가 등기부등본에서 반드시 볼 항목을 체크리스트로 만들어 줘. 왜 봐야 하는지도 한 줄씩 붙여 줘.",
+    why:"현장에 그대로 들고 갈 수 있는 형태로 받습니다." },
+  { cat:"재개발 빌라", title:"위험 요인 정리",
+    text:"이 구역을 매수할 때 생길 수 있는 위험 요인 3가지를 \"무엇이 위험한가 / 어떻게 확인하나\" 형식으로 정리해 줘.",
+    why:"좋은 점만 말하는 브리핑은 사고로 이어집니다." },
+
+  { cat:"검산", title:"근거 되묻기",
+    text:"방금 말한 숫자는 자료의 몇 행에서 나왔어? 계산 과정을 그대로 보여 줘.",
+    why:"오늘 배우는 것 중 가장 중요한 한 마디입니다. 이 질문이 사고를 막습니다." },
+  { cat:"검산", title:"취소 거래 확인",
+    text:"해제사유발생일이 있는 행은 빼고 계산한 게 맞아? 뺀 건수가 몇 건인지 알려 줘.",
+    why:"AI가 가장 자주 빠뜨리는 처리입니다." },
+  { cat:"검산", title:"건수 대조",
+    text:"네가 센 총 거래 건수가 몇 건이야? 동별로도 나눠서 알려 줘.",
+    why:"엑셀에서 행 개수를 세어 맞춰보면 AI가 자료를 온전히 읽었는지 알 수 있습니다." },
+  { cat:"검산", title:"반대로 생각해보기",
+    text:"지금 결론과 반대되는 해석이 가능한지, 가능하다면 어떤 자료가 있어야 판가름 나는지 말해 줘.",
+    why:"한쪽으로 기운 답을 스스로 점검하게 만듭니다." },
+
+  { cat:"현장에서", title:"손님 문자로 바꾸기",
+    text:"위 내용을 손님에게 보낼 문자 메시지로 바꿔 줘. 3문단 이내, 숫자는 두 개만 남기고, 만나서 설명드리겠다는 말로 끝내 줘.",
+    why:"긴 분석을 그대로 보내면 안 읽습니다." },
+  { cat:"현장에서", title:"매물 소개글 쓰기",
+    text:"{단지명} {면적}㎡ 매물 소개글을 써 줘. 최근 실거래와 비교한 가격 근거를 넣고, 단점도 한 가지 솔직하게 써 줘. 확인 안 된 개발 호재는 쓰지 마.",
+    why:"과장광고를 피하면서도 설득력 있게 쓰는 틀입니다." },
+  { cat:"현장에서", title:"예상 질문 뽑기",
+    text:"이 브리핑을 받은 손님이 던질 만한 질문 7개와, 각 질문에 자료로 답할 수 있는지 없는지를 표로 정리해 줘.",
+    why:"상담 전에 막힐 지점을 미리 압니다." },
+  { cat:"현장에서", title:"블로그 글로 펴기",
+    text:"위 내용을 블로그 글로 다시 써 줘. 제목 3개 후보, 소제목 4개, 본문 1500자 내외. 투자 권유 표현은 빼고 사실과 해석을 구분해 줘.",
+    why:"같은 분석으로 콘텐츠까지 뽑습니다." },
+  { cat:"현장에서", title:"한 장 요약 만들기",
+    text:"위 내용을 A4 한 장에 들어갈 표 하나로 압축해 줘. 왼쪽에 항목, 오른쪽에 숫자와 한 줄 설명.",
+    why:"손님 앞에 놓고 짚어가며 설명할 자료가 됩니다." }
+];
+var CATS = ["전체","시작","아파트","재개발 빌라","검산","현장에서"];
+var curCat = "전체";
+function drawCats(){
+  $("cats").innerHTML = CATS.map(function(c){
+    return '<button type="button" data-c="' + esc(c) + '"' + (c === curCat ? ' class="active"' : "") + ">" + esc(c) + "</button>";
+  }).join("");
+}
+function drawLib(){
+  var q = $("q").value.trim();
+  var list = LIB.filter(function(p){
+    if (curCat !== "전체" && p.cat !== curCat) return false;
+    if (q && (p.title + p.text + p.why).indexOf(q) < 0) return false;
+    return true;
+  });
+  $("libEmpty").hidden = list.length > 0;
+  var groups = {};
+  list.forEach(function(p){ (groups[p.cat] = groups[p.cat] || []).push(p); });
+  var intro = {
+    "시작":"자료를 올린 직후에 던지는 질문입니다. 여기서 기준을 잡아둡니다.",
+    "아파트":"위에서부터 순서대로 물으세요. 앞의 답이 뒤 질문의 재료가 됩니다.",
+    "재개발 빌라":"아파트와 질문이 다릅니다. 집값이 아니라 입주권 값을 묻는 것이기 때문입니다.",
+    "검산":"답을 받은 뒤에 던지는 질문입니다. 이게 사고를 막습니다.",
+    "현장에서":"분석을 실제로 써먹는 단계입니다."
+  };
+  $("lib").innerHTML = CATS.slice(1).filter(function(c){ return groups[c]; }).map(function(c){
+    return '<div class="pgroup"><h3>' + esc(c) + "</h3><p>" + esc(intro[c] || "") + "</p>"
+      + groups[c].map(function(p){
+          var i = LIB.indexOf(p);
+          return '<div class="p"><div class="ph"><div class="pt"><b>' + esc(p.title) + "</b><p>" + esc(p.text) + "</p></div>"
+            + '<button class="btn sm" type="button" data-i="' + i + '">복사</button></div>'
+            + '<div class="why">' + esc(p.why) + "</div></div>";
+        }).join("")
+      + "</div>";
+  }).join("");
+}
+$("cats").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-c]");
+  if (!b) return;
+  curCat = b.dataset.c;
+  drawCats(); drawLib();
+});
+$("q").addEventListener("input", drawLib);
+$("lib").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-i]");
+  if (!b) return;
+  copy(LIB[+b.dataset.i].text, "프롬프트를 복사했습니다");
+});
+drawCats(); drawLib();
+
+})();
+</script>
+</body>
+</html>

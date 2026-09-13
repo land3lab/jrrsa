@@ -127,6 +127,18 @@
   pre.brief{margin:0; padding:14px; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:10px;
     max-height:300px; overflow:auto; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:12px; line-height:1.7; white-space:pre-wrap; word-break:break-word; color:var(--ink-soft);}
+
+  /* ── 도구 사이 이동 ── */
+  nav.jump{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px;}
+  nav.jump a{flex:1 1 160px; display:flex; align-items:center; justify-content:center; gap:7px;
+    background:var(--surface); border:1px solid var(--border); border-radius:11px;
+    padding:12px 14px; font-weight:700; font-size:13.5px; color:var(--navy); text-align:center;
+    box-shadow:0 1px 2px rgba(27,34,51,.05);}
+  nav.jump a:hover{background:var(--gold-tint); border-color:var(--gold-soft);}
+  nav.jump a.cur{background:var(--navy); border-color:var(--navy); color:#fff; cursor:default;}
+  nav.jump a.cur:hover{background:var(--navy);}
+  nav.jump.bottom{margin:22px 0 0;}
+
   footer{max-width:1000px; margin:20px auto 0; padding:14px; font-size:11.5px; color:var(--ink-faint); line-height:1.7;}
 
   @media (max-width:720px){
@@ -151,6 +163,13 @@
 </header>
 
 <main class="wrap">
+
+  <nav class="jump">
+    <a href="/"><span>🏠</span> 툴박스</a>
+    <a href="/panbokgi.html" class="cur"><span>📈</span> 실거래 판독기</a>
+    <a href="/gems.html"><span>🤖</span> 젬스 실습실</a>
+  </nav>
+
 
   <section class="card">
     <h2>자료 불러오기</h2>
@@ -291,6 +310,11 @@
     <div class="row" style="margin-bottom:10px;"><button class="btn" id="copyBrief" type="button">브리핑 복사</button></div>
     <pre class="brief" id="brief"></pre>
   </section>
+  <nav class="jump bottom">
+    <a href="/"><span>🏠</span> 툴박스</a>
+    <a href="/panbokgi.html" class="cur"><span>📈</span> 실거래 판독기</a>
+    <a href="/gems.html"><span>🤖</span> 젬스 실습실</a>
+  </nav>
 </main>
 
 <footer>
