@@ -37,6 +37,13 @@
   header .brand span{font-size:10.5px; color:var(--gold-soft);}
   #installBtn{display:none; background:var(--gold-soft); color:var(--navy-deep); border:none; border-radius:8px; padding:8px 12px; font-weight:700; font-size:12px; cursor:pointer; flex:0 0 auto;}
 
+  .embedwrap{background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden;}
+  .embedbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between;
+    padding:11px 14px; border-bottom:1px solid var(--border-soft); background:var(--surface-2);}
+  .embedbar .t{font-size:12.5px; color:var(--ink-soft); flex:1 1 220px; min-width:0;}
+  .embedbar a{flex:0 0 auto; background:var(--navy); color:#fff; border-radius:8px; padding:7px 13px;
+    font-size:12px; font-weight:700;}
+  .embedwrap iframe{display:block; width:100%; height:calc(100vh - 230px); min-height:520px; border:0;}
   nav.tabs{display:flex; gap:4px; overflow-x:auto; background:var(--surface); border-bottom:1px solid var(--border); padding:8px 10px; position:sticky; top:54px; z-index:19;}
   nav.tabs button{flex:0 0 auto; border:none; background:var(--surface-2); color:var(--ink-soft); font-weight:700; font-size:12.5px; padding:9px 13px; border-radius:999px; cursor:pointer; border:1px solid var(--border-soft); white-space:nowrap;}
   nav.tabs button.active{background:var(--navy); color:#fff; border-color:var(--navy);}
@@ -133,6 +140,8 @@
   <button data-panel="p-ai">AI 도구</button>
   <button data-panel="p-assistant">비서 만들기</button>
   <button data-panel="p-lookup">실거래가·계산기</button>
+  <button data-panel="p-panbokgi">실거래 판독기</button>
+  <button data-panel="p-gems">젬스 실습실</button>
 </nav>
 
 <main>
@@ -162,11 +171,11 @@
           <span class="name">엄선한관악ZIP</span><span class="url">brieffing.vercel.app</span>
           <span class="use">관악센터가 엄선한 매물을 모아보는 큐레이션 서비스</span><span class="open">열기 ↗</span>
         </a>
-        <a class="link-card" href="/panbokgi.html">
+        <a class="link-card" href="#" data-gotab="p-panbokgi">
           <span class="name">실거래 판독기</span><span class="url">jrrsa.vercel.app/panbokgi.html</span>
           <span class="use">공공데이터로 실거래가를 불러와 월별 추이·단지 순위·지도까지 한 화면에서 읽는 도구</span><span class="open">열기 ↗</span>
         </a>
-        <a class="link-card" href="/gems.html">
+        <a class="link-card" href="#" data-gotab="p-gems">
           <span class="name">젬스 실습실</span><span class="url">jrrsa.vercel.app/gems.html</span>
           <span class="use">젬스 지침을 골라서 만들고, 부동산 실무 프롬프트를 버튼 하나로 복사하는 실습 도구</span><span class="open">열기 ↗</span>
         </a>
@@ -395,6 +404,28 @@
       </div>
     </div>
   </section>
+
+  <!-- 실거래 판독기 -->
+  <section class="panel" id="p-panbokgi">
+    <div class="embedwrap">
+      <div class="embedbar">
+        <span class="t">공공데이터로 실거래가를 불러와 월별 추이·단지 순위·지도까지 봅니다.</span>
+        <a href="/panbokgi.html" target="_blank" rel="noopener">새 창에서 크게 보기 ↗</a>
+      </div>
+      <iframe id="fr-panbokgi" data-src="/panbokgi.html?embed=1" title="실거래 판독기" loading="lazy"></iframe>
+    </div>
+  </section>
+
+  <!-- 젬스 실습실 -->
+  <section class="panel" id="p-gems">
+    <div class="embedwrap">
+      <div class="embedbar">
+        <span class="t">젬스 지침을 골라서 만들고, 제미나이 프롬프트를 버튼 하나로 복사합니다.</span>
+        <a href="/gems.html" target="_blank" rel="noopener">새 창에서 크게 보기 ↗</a>
+      </div>
+      <iframe id="fr-gems" data-src="/gems.html?embed=1" title="젬스 실습실" loading="lazy"></iframe>
+    </div>
+  </section>
 </main>
 
 <footer>나폴길 · Land3 Lab — 공공데이터포털 Open API 기반</footer>
@@ -406,8 +437,20 @@ document.querySelectorAll('#mainTabs button').forEach(btn=>{
     document.querySelectorAll('#mainTabs button').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     document.querySelectorAll('main > .panel').forEach(p=>p.classList.remove('active'));
-    document.getElementById(btn.dataset.panel).classList.add('active');
+    const panel = document.getElementById(btn.dataset.panel);
+    panel.classList.add('active');
+    // 끼워 넣은 도구는 처음 열 때 한 번만 불러온다
+    const fr = panel.querySelector('iframe[data-src]');
+    if (fr && !fr.src) fr.src = fr.dataset.src;
+    window.scrollTo(0, 0);
   });
+});
+document.addEventListener('click', (e)=>{
+  const a = e.target.closest('[data-gotab]');
+  if (!a) return;
+  e.preventDefault();
+  const b = document.querySelector('#mainTabs button[data-panel="' + a.dataset.gotab + '"]');
+  if (b) b.click();
 });
 document.querySelectorAll('#lookupSubtabs button').forEach(btn=>{
   btn.addEventListener('click', ()=>{

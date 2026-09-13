@@ -41,6 +41,7 @@
 
   nav.tabs{display:flex; gap:5px; overflow-x:auto; background:var(--surface); border-bottom:1px solid var(--border);
     padding:9px 12px; position:sticky; top:52px; z-index:29;}
+  html.embed nav.tabs{top:0;}
   nav.tabs button{flex:0 0 auto; background:var(--surface-2); color:var(--ink-soft); font-weight:700; font-size:12.5px;
     padding:8px 14px; border-radius:999px; cursor:pointer; border:1px solid var(--border-soft); white-space:nowrap;}
   nav.tabs button.active{background:var(--navy); color:#fff; border-color:var(--navy);}
@@ -130,6 +131,12 @@
   nav.jump a.cur:hover{background:var(--navy);}
   nav.jump.bottom{margin:22px 0 0;}
 
+
+  /* 툴박스 안에 끼워 넣었을 때(?embed=1)는 자체 머리글과 이동 버튼을 감춘다 */
+  html.embed header, html.embed nav.jump{display:none !important;}
+  html.embed body{padding-bottom:16px;}
+  html.embed .wrap{padding-top:10px;}
+
   footer{max-width:1000px; margin:20px auto 0; padding:14px; font-size:11.5px; color:var(--ink-faint); line-height:1.7;}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(14px); opacity:0;
     background:var(--navy-deep); color:#fff; font-size:13px; font-weight:600; padding:10px 20px; border-radius:999px;
@@ -140,6 +147,10 @@
   @media (max-width:430px){ .four{grid-template-columns:1fr;} }
   @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
 </style>
+<script>
+// 툴박스 탭 안에서 열렸을 때(?embed=1) 중복되는 머리글을 감춘다
+try { if (/(?:^|[?&])embed=1(?:&|$)/.test(location.search)) document.documentElement.className += " embed"; } catch(e){}
+</script>
 </head>
 <body>
 
