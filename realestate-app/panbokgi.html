@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>실거래 판독기 · 나폴길 AI 부동산 툴박스</title>
+<meta name="theme-color" content="#1F3352">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="description" content="공공데이터로 실거래가를 불러와 월별 추이·단지 순위·지도까지 한 화면에서 읽는 도구">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F1E6; --surface:#FFFFFF; --surface-2:#FBF7EE; --border:#DDD3BD; --border-soft:#E7DFC9;
+    --ink:#1B2233; --ink-soft:#4B5468; --ink-faint:#7B8296;
+    --navy:#1F3352; --navy-deep:#152238; --navy-tint:#E7ECF3;
+    --burgundy:#7D2E3A; --burgundy-soft:#A5525D; --burgundy-tint:#F4E6E7;
+    --gold:#A9812F; --gold-soft:#C9A45C; --gold-tint:#F3EAD2;
+    --good:#4D7A45; --bad:#B23A3A;
+    /* 차트 전용 — 색각 이상 대비까지 검증한 값 */
+    --c-price:#A62B3C; --c-count:#1F6FA8; --c-price-soft:rgba(166,43,60,.13);
+    --font-display:'Noto Serif KR', serif; --font-body:'Noto Sans KR', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  [hidden]{display:none !important;}
+  html,body{margin:0; padding:0;}
+  body{background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:14px; line-height:1.55; padding-bottom:48px;}
+  h1,h2,h3{font-family:var(--font-display); color:var(--navy); margin:0;}
+  a{color:inherit; text-decoration:none;}
+  input,select,button{font-family:var(--font-body); font-size:14px; color:var(--ink);}
+  .mono{font-variant-numeric:tabular-nums;}
+  :focus-visible{outline:2px solid var(--navy); outline-offset:2px;}
+
+  header{position:sticky; top:0; z-index:30; background:var(--navy); color:#EDE6D3; padding:12px 16px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px; box-shadow:0 2px 10px rgba(0,0,0,.15);}
+  header b{font-family:var(--font-display); font-size:15px; color:#fff;}
+  header span{font-size:10.5px; color:var(--gold-soft); display:block;}
+  header a.back{font-size:12px; color:#C9D4E4; border:1px solid #3A4E6E; border-radius:999px; padding:6px 12px; white-space:nowrap;}
+
+  .wrap{max-width:1000px; margin:0 auto; padding:16px 14px 0;}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px;}
+  .card > h2{font-size:16px; margin-bottom:3px;}
+  .card .sub{font-size:12.5px; color:var(--ink-soft); margin:0 0 12px;}
+  .row{display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-end;}
+  .field{display:flex; flex-direction:column; gap:4px; min-width:0;}
+  .field label{font-size:10.5px; letter-spacing:.08em; color:var(--ink-faint); font-weight:700;}
+  .field select,.field input{background:var(--surface-2); border:1px solid var(--border); border-radius:9px;
+    padding:8px 10px; min-width:120px; max-width:100%;}
+  .field input[type=text]{min-width:150px;}
+  .btn{background:var(--navy); color:#fff; border:1px solid var(--navy); border-radius:9px;
+    padding:9px 18px; font-weight:700; cursor:pointer;}
+  .btn:hover{background:var(--navy-deep);}
+  .btn.ghost{background:var(--surface-2); color:var(--ink-soft); border-color:var(--border);}
+  .btn.ghost:hover{background:var(--gold-tint); color:var(--ink);}
+  .btn[disabled]{opacity:.5; cursor:default;}
+
+  nav.modes{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap;}
+  nav.modes button{border:1px solid var(--border-soft); background:var(--surface-2); color:var(--ink-soft);
+    font-weight:700; font-size:12.5px; padding:8px 14px; border-radius:999px; cursor:pointer;}
+  nav.modes button.active{background:var(--burgundy); color:#fff; border-color:var(--burgundy);}
+  .modepanel{display:none;} .modepanel.active{display:block;}
+
+  .drop{border:2px dashed var(--border); border-radius:12px; background:var(--surface-2); padding:22px 18px;
+    display:flex; flex-wrap:wrap; gap:12px 16px; align-items:center; transition:background .15s;}
+  .drop.over{background:var(--burgundy-tint); border-color:var(--burgundy-soft);}
+  .drop .t{flex:1 1 240px; min-width:0;}
+  .drop .t b{display:block; font-size:14px;}
+  .drop .t span{font-size:12px; color:var(--ink-faint);}
+
+  .note{display:flex; gap:8px; align-items:baseline; padding:9px 13px; border-radius:0 9px 9px 0;
+    border-left:3px solid var(--gold); background:var(--gold-tint); font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;}
+  .note b{color:var(--gold); white-space:nowrap;}
+  .note.err{border-left-color:var(--bad); background:#F6E4E4;} .note.err b{color:var(--bad);}
+  .note[hidden]{display:none !important;}
+
+  .bar{height:6px; background:var(--border-soft); border-radius:99px; overflow:hidden; margin-top:10px;}
+  .bar i{display:block; height:100%; background:var(--burgundy); width:0; transition:width .2s;}
+
+  .ledger{display:grid; grid-template-columns:repeat(4,1fr); background:var(--surface);
+    border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:14px;}
+  .ledger .cell{padding:14px 15px; border-left:1px solid var(--border-soft);}
+  .ledger .cell:first-child{border-left:0;}
+  .ledger .k{font-size:10.5px; letter-spacing:.08em; color:var(--ink-faint); font-weight:700;}
+  .ledger .v{font-size:24px; font-weight:700; color:var(--navy); line-height:1.25; margin-top:4px; letter-spacing:-.01em;}
+  .ledger .v .u{font-size:12px; font-weight:500; color:var(--ink-faint); margin-left:2px;}
+  .ledger .s{font-size:11.5px; color:var(--ink-faint); margin-top:1px;}
+
+  .chartbox{position:relative;}
+  svg.chart{display:block; width:100%; height:auto; overflow:visible;}
+  .tip{position:absolute; pointer-events:none; z-index:5; opacity:0; transition:opacity .1s;
+    background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:8px 11px;
+    font-size:12px; line-height:1.5; box-shadow:0 4px 14px rgba(0,0,0,.13); white-space:nowrap;}
+  .tip.on{opacity:1;}
+  .tip .tk{color:var(--ink-faint); margin-right:8px;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink-soft); margin-bottom:8px;}
+  .legend:empty{display:none;}
+  .legend i{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px;}
+
+  #map{width:100%; height:430px; border-radius:12px; border:1px solid var(--border); background:var(--surface-2);}
+  #mapMsg{display:block; text-align:center; padding:120px 20px; font-size:13px;
+    color:var(--ink-faint); line-height:1.9;}
+  #mapMsg b{color:var(--ink-soft);}
+  .maplegend{display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin-top:10px; font-size:11.5px; color:var(--ink-soft);}
+  .ramp{display:flex; align-items:center; gap:0;}
+  .ramp i{width:26px; height:11px;}
+  .ramp i:first-child{border-radius:3px 0 0 3px;} .ramp i:last-child{border-radius:0 3px 3px 0;}
+  .mk{border-radius:50%; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.35); cursor:pointer;}
+  .iw{padding:10px 12px; font-family:var(--font-body); font-size:12.5px; line-height:1.6; min-width:150px;}
+  .iw b{font-family:var(--font-display); font-size:14px; color:var(--navy); display:block; margin-bottom:3px;}
+
+  .tablewrap{overflow-x:auto;}
+  table{border-collapse:collapse; width:100%; min-width:620px; font-size:13px;}
+  thead th{text-align:right; font-size:10.5px; letter-spacing:.07em; color:var(--ink-faint); font-weight:700;
+    padding:8px 9px; border-bottom:1.5px solid var(--navy); white-space:nowrap;}
+  thead th:first-child, tbody td:first-child{text-align:left; padding-left:0; width:26px; color:var(--ink-faint); font-size:11.5px;}
+  thead th:nth-child(2), tbody td:nth-child(2){text-align:left;}
+  tbody td{padding:9px; text-align:right; border-bottom:1px solid var(--border-soft); white-space:nowrap;}
+  tbody tr{cursor:pointer;}
+  tbody tr:hover{background:var(--burgundy-tint);}
+  tbody td.name{white-space:normal; min-width:140px; font-weight:600; color:var(--navy);}
+  tbody td .sub2{display:block; font-size:11px; color:var(--ink-faint); font-weight:400;}
+  .pin{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:baseline;}
+
+  pre.brief{margin:0; padding:14px; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:10px;
+    max-height:300px; overflow:auto; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:12px; line-height:1.7; white-space:pre-wrap; word-break:break-word; color:var(--ink-soft);}
+  footer{max-width:1000px; margin:20px auto 0; padding:14px; font-size:11.5px; color:var(--ink-faint); line-height:1.7;}
+
+  @media (max-width:720px){
+    .ledger{grid-template-columns:repeat(2,1fr);}
+    .ledger .cell:nth-child(3){border-left:0;}
+    .ledger .cell:nth-child(3),.ledger .cell:nth-child(4){border-top:1px solid var(--border-soft);}
+    #map{height:340px;}
+  }
+  @media (max-width:430px){
+    .ledger{grid-template-columns:1fr;}
+    .ledger .cell{border-left:0; border-top:1px solid var(--border-soft);}
+    .ledger .cell:first-child{border-top:0;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div><b>📈 실거래 판독기</b><span>공공데이터 · 추이 · 지도</span></div>
+  <a class="back" href="/">← 툴박스</a>
+</header>
+
+<main class="wrap">
+
+  <section class="card">
+    <h2>자료 불러오기</h2>
+    <p class="sub">국토교통부 공공데이터에서 바로 받아오거나, 실거래가 공개시스템에서 내려받은 CSV를 올리세요. 파일은 서버로 보내지 않고 브라우저에서만 계산합니다.</p>
+
+    <nav class="modes" id="modes">
+      <button class="active" data-mode="api" type="button">공공데이터 조회</button>
+      <button data-mode="csv" type="button">CSV 파일 올리기</button>
+    </nav>
+
+    <div class="modepanel active" id="m-api">
+      <div class="row">
+        <div class="field">
+          <label for="fRegion">지역</label>
+          <select id="fRegion"></select>
+        </div>
+        <div class="field" id="wrapCustom" hidden>
+          <label for="fCustom">법정동코드 5자리</label>
+          <input type="text" id="fCustom" placeholder="예: 41285" maxlength="5" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="fKind">거래 유형</label>
+          <select id="fKind">
+            <option value="trade">아파트 매매</option>
+            <option value="rent">아파트 전월세</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fEnd">기준 월</label>
+          <input type="month" id="fEnd">
+        </div>
+        <div class="field">
+          <label for="fSpan">기간</label>
+          <select id="fSpan">
+            <option value="3">최근 3개월</option>
+            <option value="6" selected>최근 6개월</option>
+            <option value="12">최근 12개월</option>
+          </select>
+        </div>
+        <button class="btn" id="btnFetch" type="button">조회</button>
+      </div>
+      <div class="bar" id="progWrap" hidden><i id="prog"></i></div>
+    </div>
+
+    <div class="modepanel" id="m-csv">
+      <div class="drop" id="drop">
+        <div class="t">
+          <b>여기로 CSV 파일을 끌어다 놓으세요</b>
+          <span>실거래가 공개시스템 → 자료제공 → 조건별 자료제공에서 받은 파일 그대로 (아파트·연립다세대 모두 가능)</span>
+        </div>
+        <button class="btn" id="pick" type="button">파일 고르기</button>
+        <input type="file" id="file" accept=".csv,.txt" hidden>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px;">
+      <div class="field">
+        <label for="fDong">읍면동</label>
+        <select id="fDong"><option value="">전체</option></select>
+      </div>
+      <div class="field">
+        <label for="fName">단지·건물명</label>
+        <input type="text" id="fName" placeholder="이름 일부" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="fArea">전용면적</label>
+        <select id="fArea">
+          <option value="">전체</option>
+          <option value="0-60">60㎡ 이하</option>
+          <option value="60-85">60~85㎡</option>
+          <option value="85-135">85~135㎡</option>
+          <option value="135-99999">135㎡ 초과</option>
+        </select>
+      </div>
+      <div class="field" id="wrapRentKind" hidden>
+        <label for="fRentKind">전세/월세</label>
+        <select id="fRentKind">
+          <option value="all">전세+월세</option>
+          <option value="jeonse">전세만</option>
+          <option value="wolse">월세만</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <div class="note" id="hint"><b>먼저 조회하세요</b><span>지역과 기간을 고르고 [조회]를 누르면 공공데이터에서 실제 거래를 불러옵니다.</span></div>
+  <div class="note err" id="err" hidden><b>읽지 못했습니다</b><span id="errText"></span></div>
+
+  <div class="ledger" id="ledger"></div>
+
+  <section class="card">
+    <h2 id="t1">월별 평균 평당가</h2>
+    <p class="sub">전용면적 기준 · 1평 = 3.3058㎡ · 단위 만원</p>
+    <div class="chartbox">
+      <svg class="chart" id="chartPrice" viewBox="0 0 900 300" role="img" aria-label="월별 평균 평당가 추이"></svg>
+      <div class="tip" id="tipPrice"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>월별 거래 건수</h2>
+    <p class="sub">거래가 몰린 달과 끊긴 달을 같이 보세요</p>
+    <div class="legend" id="legCount"></div>
+    <div class="chartbox">
+      <svg class="chart" id="chartCount" viewBox="0 0 900 220" role="img" aria-label="월별 거래 건수"></svg>
+      <div class="tip" id="tipCount"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>지도에서 보기</h2>
+    <p class="sub">원의 크기는 거래 건수, 색은 평균 평당가입니다. 원을 누르면 단지 요약이 나옵니다.</p>
+    <div id="map"><div id="mapMsg">지도를 준비하고 있습니다…</div></div>
+    <div class="maplegend">
+      <span>평균 평당가 낮음</span>
+      <span class="ramp" id="ramp"></span>
+      <span>높음</span>
+      <span style="margin-left:auto; color:var(--ink-faint);" id="geoStat"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>단지·건물별 순위</h2>
+    <p class="sub">거래가 많은 순 · 상위 30곳 · 줄을 누르면 지도가 그 단지로 이동합니다</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th></th><th>단지·건물</th><th>거래</th><th>평균 평당가</th><th>최저</th><th>최고</th><th>최근</th>
+        </tr></thead>
+        <tbody id="tbl"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>AI에 넘길 브리핑</h2>
+    <p class="sub">복사해서 제미나이·젬스 대화창에 붙여넣으세요. 표 전체 대신 요약 수치만 넘기면 AI가 훨씬 정확하게 답합니다.</p>
+    <div class="row" style="margin-bottom:10px;"><button class="btn" id="copyBrief" type="button">브리핑 복사</button></div>
+    <pre class="brief" id="brief"></pre>
+  </section>
+</main>
+
+<footer>
+  자료 출처: 국토교통부 아파트 매매·전월세 실거래자료 (공공데이터포털 open API) / 국토교통부 실거래가 공개시스템 CSV.<br>
+  평당가는 전용면적 기준이며 공급면적 기준 시세와 다릅니다. 해제(취소)된 거래는 CSV에 표시된 경우 제외합니다.<br>
+  지도 · 주소 좌표 변환: 카카오맵. 공개된 실거래 자료를 그대로 보여주는 도구이며 투자 권유가 아닙니다.
+</footer>
+
+<script>
+/* ─────────────────────────────────────────────
+   카카오맵 JavaScript 키
+   developers.kakao.com → 내 애플리케이션 → 앱 키 → JavaScript 키
+   플랫폼 → Web → 사이트 도메인에 https://jrrsa.vercel.app 를 등록해야 지도가 뜹니다.
+   ───────────────────────────────────────────── */
+var KAKAO_JS_KEY = "7fe34561d14e5646a4dd94d14492acc8";
+</script>
+<script>
+(function(){
+  var s = document.createElement("script");
+  s.src = "https://dapi.kakao.com/v2/maps/sdk.js?appkey=" + KAKAO_JS_KEY + "&libraries=services&autoload=false";
+  s.onerror = function(){ window.__kakaoFailed = true; };
+  document.head.appendChild(s);
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+var $ = function(id){ return document.getElementById(id); };
+var PY = 3.3058;
+
+/* ── 서울 자치구 법정동코드(앞 5자리) ── */
+var REGIONS = [
+  ["11110","서울 종로구"],["11140","서울 중구"],["11170","서울 용산구"],["11200","서울 성동구"],
+  ["11215","서울 광진구"],["11230","서울 동대문구"],["11260","서울 중랑구"],["11290","서울 성북구"],
+  ["11305","서울 강북구"],["11320","서울 도봉구"],["11350","서울 노원구"],["11380","서울 은평구"],
+  ["11410","서울 서대문구"],["11440","서울 마포구"],["11470","서울 양천구"],["11500","서울 강서구"],
+  ["11530","서울 구로구"],["11545","서울 금천구"],["11560","서울 영등포구"],["11590","서울 동작구"],
+  ["11620","서울 관악구"],["11650","서울 서초구"],["11680","서울 강남구"],["11710","서울 송파구"],
+  ["11740","서울 강동구"]
+];
+
+/* ── 숫자 다듬기 ── */
+function comma(n){ return Math.round(n).toLocaleString("ko-KR"); }
+function eok(man){
+  man = Math.round(man);
+  if (man < 10000) return comma(man) + "만";
+  var e = Math.floor(man/10000), r = man % 10000;
+  return e + "억" + (r >= 1 ? " " + comma(r) + "만" : "");
+}
+function ymLabel(ym){ return ym.slice(2,4) + "." + ym.slice(4,6); }
+function mean(a){ return a.length ? a.reduce(function(x,y){return x+y;},0)/a.length : 0; }
+function median(a){
+  if (!a.length) return 0;
+  var s = a.slice().sort(function(x,y){ return x-y; });
+  var m = Math.floor(s.length/2);
+  return s.length % 2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];
+  });
+}
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+/* ── 상태 ── */
+var ALL = [], VIEW = [], MODE = "trade", SGG_LABEL = "", loading = false;
+
+/* ═══════════ 공공데이터 조회 ═══════════ */
+function monthsBack(endYm, n){
+  var y = +endYm.slice(0,4), m = +endYm.slice(4,6), out = [];
+  for (var i = n-1; i >= 0; i--){
+    var d = new Date(y, m-1-i, 1);
+    out.push(String(d.getFullYear()) + ("0"+(d.getMonth()+1)).slice(-2));
+  }
+  return out;
+}
+async function getJson(url){
+  var r = await fetch(url);
+  var t = await r.text();
+  var j;
+  try { j = JSON.parse(t); }
+  catch(e){ throw new Error("서버가 예상과 다른 응답을 보냈습니다. 잠시 후 [조회]를 다시 눌러주세요."); }
+  if (!j.ok) throw new Error(j.error || "알 수 없는 오류");
+  return j;
+}
+async function fetchApi(){
+  if (loading) return;
+  var sel = $("fRegion").value;
+  var code = sel === "custom" ? $("fCustom").value.replace(/[^0-9]/g,"") : sel;
+  if (!/^\d{5}$/.test(code)){ showErr("법정동코드 5자리를 정확히 입력해주세요."); return; }
+  SGG_LABEL = sel === "custom" ? ("법정동코드 " + code)
+            : (REGIONS.filter(function(r){ return r[0]===sel; })[0] || ["",code])[1];
+
+  var kind = $("fKind").value;
+  var endYm = ($("fEnd").value || "").replace("-","");
+  if (!/^\d{6}$/.test(endYm)){ showErr("기준 월을 골라주세요."); return; }
+  var list = monthsBack(endYm, +$("fSpan").value);
+  var ep = kind === "rent" ? "/api/apt-rent" : "/api/apt-trade";
+
+  loading = true;
+  $("btnFetch").disabled = true;
+  $("btnFetch").textContent = "불러오는 중…";
+  $("progWrap").hidden = false;
+  $("err").hidden = true;
+  $("hint").hidden = false;
+  $("hint").querySelector("b").textContent = "불러오는 중";
+  $("hint").querySelector("span").textContent = SGG_LABEL + " · " + list[0] + " ~ " + list[list.length-1];
+
+  var rows = [], failed = [];
+  for (var i = 0; i < list.length; i++){
+    $("prog").style.width = Math.round((i/list.length)*100) + "%";
+    try {
+      var j = await getJson(ep + "?lawdCd=" + code + "&dealYmd=" + list[i]);
+      (j.items || []).forEach(function(it){
+        var r = normalizeApi(it, kind, list[i]);
+        if (r) rows.push(r);
+      });
+    } catch(e){ failed.push(list[i]); }
+  }
+  $("prog").style.width = "100%";
+  loading = false;
+  $("btnFetch").disabled = false;
+  $("btnFetch").textContent = "조회";
+  setTimeout(function(){ $("progWrap").hidden = true; $("prog").style.width = "0"; }, 400);
+
+  if (!rows.length){
+    showErr("해당 기간에 불러올 거래가 없습니다." + (failed.length ? " (응답 실패: " + failed.join(", ") + "월 — 다시 시도해보세요)" : ""));
+    return;
+  }
+  MODE = kind;
+  adopt(rows);
+  $("hint").hidden = failed.length === 0;
+  if (failed.length){
+    $("hint").querySelector("b").textContent = "일부만 불러왔습니다";
+    $("hint").querySelector("span").textContent = failed.join(", ") + "월은 응답이 없어 빠졌습니다. [조회]를 한 번 더 누르면 다시 시도합니다.";
+  }
+}
+function normalizeApi(it, kind, ym){
+  var area = parseFloat(String(it["전용면적"]||"").replace(/[^0-9.]/g,""));
+  if (!(area > 0)) return null;
+  var name = (it["아파트"] || "").trim() || "(이름없음)";
+  var base = {
+    name:name, dong:(it["법정동"]||"").trim(), jibun:(it["지번"]||"").trim(),
+    area:area, pyeong:area/PY, ym:ym, day:it["일"]||"",
+    floor:it["층"]||"", yr:it["건축년도"]||"", canceled:false, monthly:0
+  };
+  if (kind === "rent"){
+    var dep = parseFloat(String(it["보증금"]||"").replace(/[^0-9.]/g,""));
+    var mon = parseFloat(String(it["월세"]||"").replace(/[^0-9.]/g,"")) || 0;
+    if (!(dep >= 0)) return null;
+    base.amount = dep; base.monthly = mon;
+    base.kind = mon > 0 ? "wolse" : "jeonse";
+  } else {
+    var amt = parseFloat(String(it["거래금액"]||"").replace(/[^0-9.]/g,""));
+    if (!(amt > 0)) return null;
+    base.amount = amt; base.kind = "trade";
+  }
+  base.per = base.amount / base.pyeong;
+  return base;
+}
+
+/* ═══════════ CSV 읽기 ═══════════ */
+function splitLine(line){
+  var out = [], cur = "", q = false;
+  for (var i = 0; i < line.length; i++){
+    var ch = line[i];
+    if (q){
+      if (ch === "\"" ){ if (line[i+1] === "\"" ){ cur += "\""; i++; } else q = false; }
+      else cur += ch;
+    } else {
+      if (ch === "\"" ) q = true;
+      else if (ch === ","){ out.push(cur); cur = ""; }
+      else cur += ch;
+    }
+  }
+  out.push(cur);
+  return out.map(function(s){ return s.trim(); });
+}
+function findCol(head, names){
+  for (var i = 0; i < names.length; i++)
+    for (var j = 0; j < head.length; j++){
+      var h = head[j].replace(/\s/g,"");
+      if (h === names[i] || h.indexOf(names[i]) === 0) return j;
+    }
+  return -1;
+}
+function parseCSV(text){
+  var lines = text.split(/\r?\n/), hi = -1;
+  for (var i = 0; i < lines.length && i < 40; i++)
+    if (lines[i].indexOf("시군구") >= 0 && lines[i].indexOf("거래금액") >= 0){ hi = i; break; }
+  if (hi < 0) throw new Error("'시군구'와 '거래금액' 항목이 있는 표를 찾지 못했습니다. 실거래가 공개시스템에서 받은 CSV가 맞는지 확인해주세요.");
+  var head = splitLine(lines[hi]);
+  var c = {
+    sgg:findCol(head,["시군구"]), bun:findCol(head,["번지"]),
+    name:findCol(head,["단지명","건물명"]), area:findCol(head,["전용면적"]),
+    land:findCol(head,["대지권면적"]), ym:findCol(head,["계약년월"]), d:findCol(head,["계약일"]),
+    amt:findCol(head,["거래금액"]), fl:findCol(head,["층"]), yr:findCol(head,["건축년도"]),
+    canc:findCol(head,["해제사유발생일"])
+  };
+  if (c.area < 0 || c.ym < 0 || c.amt < 0) throw new Error("전용면적·계약년월·거래금액 항목을 찾지 못했습니다.");
+  var rows = [], sggSeen = "";
+  for (var k = hi+1; k < lines.length; k++){
+    var raw = lines[k];
+    if (!raw || !raw.replace(/[",\s]/g,"")) continue;
+    var f = splitLine(raw);
+    var area = parseFloat(String(f[c.area]).replace(/[^0-9.]/g,""));
+    var amt  = parseFloat(String(f[c.amt]).replace(/[^0-9.]/g,""));
+    var ym   = String(f[c.ym]).replace(/[^0-9]/g,"");
+    if (!(area > 0) || !(amt > 0) || ym.length < 6) continue;
+    ym = ym.slice(0,6);
+    var sgg = c.sgg >= 0 ? f[c.sgg] : "";
+    if (sgg && !sggSeen) sggSeen = sgg.split(/\s+/).slice(0,2).join(" ");
+    var parts = sgg.split(/\s+/);
+    rows.push({
+      name:(c.name >= 0 ? f[c.name] : "") || "(이름없음)",
+      dong:parts.length ? parts[parts.length-1] : "",
+      jibun:c.bun >= 0 ? f[c.bun] : "",
+      area:area, pyeong:area/PY, ym:ym, day:c.d >= 0 ? f[c.d] : "",
+      amount:amt, per:amt/(area/PY), monthly:0, kind:"trade",
+      floor:c.fl >= 0 ? f[c.fl] : "", yr:c.yr >= 0 ? f[c.yr] : "",
+      canceled:!!(c.canc >= 0 && String(f[c.canc]).replace(/[^0-9]/g,"").length >= 6)
+    });
+  }
+  if (!rows.length) throw new Error("표는 찾았지만 읽을 수 있는 거래가 한 건도 없었습니다.");
+  SGG_LABEL = sggSeen || "업로드한 파일";
+  return rows;
+}
+function decode(buf){
+  var u8 = new Uint8Array(buf);
+  try {
+    var s = new TextDecoder("utf-8", {fatal:true}).decode(u8);
+    return s.charCodeAt(0) === 0xFEFF ? s.slice(1) : s;
+  } catch(e){}
+  try { return new TextDecoder("euc-kr").decode(u8); }
+  catch(e2){ return new TextDecoder("utf-8").decode(u8); }
+}
+function readFile(f){
+  if (!f) return;
+  var fr = new FileReader();
+  fr.onload = function(){
+    try { MODE = "trade"; adopt(parseCSV(decode(fr.result))); $("hint").hidden = true; }
+    catch(e){ showErr(e.message); }
+  };
+  fr.onerror = function(){ showErr("파일을 여는 중 문제가 생겼습니다."); };
+  fr.readAsArrayBuffer(f);
+}
+
+/* ═══════════ 필터 & 집계 ═══════════ */
+function showErr(msg){
+  $("errText").textContent = msg;
+  $("err").hidden = false;
+}
+function adopt(rows){
+  ALL = rows;
+  $("err").hidden = true;
+  $("wrapRentKind").hidden = MODE !== "rent";
+  var dongs = {};
+  rows.forEach(function(r){ if (r.dong) dongs[r.dong] = 1; });
+  var sel = $("fDong"), keep = sel.value;
+  sel.innerHTML = '<option value="">전체</option>' +
+    Object.keys(dongs).sort().map(function(d){ return "<option>" + esc(d) + "</option>"; }).join("");
+  if (keep && dongs[keep]) sel.value = keep;
+  applyFilters();
+}
+function applyFilters(){
+  var dong = $("fDong").value, nm = $("fName").value.trim(), ar = $("fArea").value;
+  var rk = $("fRentKind").value;
+  var lo = 0, hi = 1e9;
+  if (ar){ var p = ar.split("-"); lo = +p[0]; hi = +p[1]; }
+  VIEW = ALL.filter(function(r){
+    if (r.canceled) return false;
+    if (dong && r.dong !== dong) return false;
+    if (nm && r.name.indexOf(nm) < 0) return false;
+    if (r.area <= lo || r.area > hi) return false;
+    if (MODE === "rent"){
+      if (rk === "jeonse" && r.kind !== "jeonse") return false;
+      if (rk === "wolse" && r.kind !== "wolse") return false;
+    }
+    return true;
+  });
+  render();
+}
+// 평당가 계산에 쓰는 행 — 월세는 보증금만으로 평당가를 내면 왜곡되므로 제외한다
+function priceRows(rows){
+  return MODE === "rent" ? rows.filter(function(r){ return r.kind === "jeonse"; }) : rows;
+}
+function monthly(rows){
+  var m = {};
+  rows.forEach(function(r){ (m[r.ym] = m[r.ym] || []).push(r); });
+  return Object.keys(m).sort().map(function(k){
+    var g = m[k], pr = priceRows(g);
+    return {
+      ym:k, n:g.length,
+      nJeonse:g.filter(function(r){ return r.kind === "jeonse"; }).length,
+      nWolse:g.filter(function(r){ return r.kind === "wolse"; }).length,
+      per:mean(pr.map(function(r){ return r.per; })),
+      med:median(g.map(function(r){ return r.amount; }))
+    };
+  });
+}
+function byComplex(rows){
+  var m = {};
+  rows.forEach(function(r){
+    var k = r.name + "|" + r.dong;
+    if (!m[k]) m[k] = { name:r.name, dong:r.dong, jibun:r.jibun, yr:r.yr, rows:[] };
+    m[k].rows.push(r);
+  });
+  return Object.keys(m).map(function(k){
+    var g = m[k], a = g.rows, pr = priceRows(a);
+    return {
+      key:k, name:g.name, dong:g.dong, jibun:g.jibun, yr:g.yr, n:a.length,
+      per:mean(pr.map(function(r){ return r.per; })),
+      min:Math.min.apply(null, a.map(function(r){ return r.amount; })),
+      max:Math.max.apply(null, a.map(function(r){ return r.amount; })),
+      last:a.map(function(r){ return r.ym; }).sort().pop()
+    };
+  }).sort(function(a,b){ return b.n - a.n || b.per - a.per; });
+}
+
+/* ═══════════ 차트 ═══════════ */
+function svgEl(t, a){
+  var e = document.createElementNS("http://www.w3.org/2000/svg", t);
+  for (var k in a) e.setAttribute(k, a[k]);
+  return e;
+}
+function txt(svg, s, a){
+  var e = svgEl("text", a);
+  e.textContent = s;
+  svg.appendChild(e);
+  return e;
+}
+function empty(svg, msg){
+  svg.innerHTML = "";
+  txt(svg, msg, { x:450, y:120, "text-anchor":"middle", fill:css("--ink-faint"), "font-size":"14" });
+}
+function drawPrice(ms){
+  var svg = $("chartPrice"); svg.innerHTML = "";
+  ms = ms.filter(function(m){ return m.per > 0; });
+  if (!ms.length){ empty(svg, "표시할 거래가 없습니다"); return; }
+  var W = 900, H = 300, L = 66, R = 60, T = 24, Bm = 38;
+  var vals = ms.map(function(m){ return m.per; });
+  var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+  var pad = (mx - mn) || mx*0.1; mn = Math.max(0, mn - pad*0.35); mx = mx + pad*0.35;
+  var iw = W-L-R, ih = H-T-Bm;
+  var x = function(i){ return ms.length === 1 ? L+iw/2 : L + iw*i/(ms.length-1); };
+  var y = function(v){ return T + ih - (v-mn)/(mx-mn)*ih; };
+
+  for (var t = 0; t <= 4; t++){
+    var v = mn + (mx-mn)*t/4, yy = y(v);
+    svg.appendChild(svgEl("line", { x1:L, x2:W-R, y1:yy, y2:yy, stroke:css("--border-soft"), "stroke-width":1 }));
+    txt(svg, comma(v), { x:L-10, y:yy+4, "text-anchor":"end", fill:css("--ink-faint"), "font-size":"11" });
+  }
+  txt(svg, "만원/평", { x:L-10, y:T-8, "text-anchor":"end", fill:css("--ink-faint"), "font-size":"10.5" });
+
+  var d = "", a = "";
+  ms.forEach(function(m,i){ var px=x(i), py=y(m.per); d += (i?"L":"M")+px.toFixed(1)+" "+py.toFixed(1); a += (i?"L":"M")+px.toFixed(1)+" "+py.toFixed(1); });
+  a += "L"+x(ms.length-1).toFixed(1)+" "+(T+ih)+"L"+x(0).toFixed(1)+" "+(T+ih)+"Z";
+  svg.appendChild(svgEl("path", { d:a, fill:css("--c-price-soft"), stroke:"none" }));
+  svg.appendChild(svgEl("path", { d:d, fill:"none", stroke:css("--c-price"), "stroke-width":2, "stroke-linejoin":"round", "stroke-linecap":"round" }));
+
+  var step = Math.ceil(ms.length/9);
+  ms.forEach(function(m,i){
+    if (i % step === 0 || i === ms.length-1)
+      txt(svg, ymLabel(m.ym), { x:x(i), y:H-14, "text-anchor":"middle", fill:css("--ink-faint"), "font-size":"11" });
+  });
+  var last = ms[ms.length-1];
+  svg.appendChild(svgEl("circle", { cx:x(ms.length-1), cy:y(last.per), r:5, fill:css("--c-price"), stroke:css("--surface"), "stroke-width":2 }));
+  txt(svg, comma(last.per), { x:Math.min(W-4, x(ms.length-1)+11), y:y(last.per)+4, fill:css("--c-price"), "font-size":"12.5", "font-weight":"700" });
+
+  hover(svg, $("tipPrice"), ms, x, function(m){
+    return "<div><b>" + m.ym.slice(0,4) + "년 " + (+m.ym.slice(4)) + "월</b></div>"
+      + '<div><span class="tk">' + (MODE === "rent" ? "전세 평당가" : "평균 평당가") + "</span>" + comma(m.per) + "만원</div>"
+      + '<div><span class="tk">' + (MODE === "rent" ? "보증금 중위값" : "거래 중위값") + "</span>" + eok(m.med) + "</div>"
+      + '<div><span class="tk">건수</span>' + m.n + "건</div>";
+  }, W, T, ih);
+}
+function drawCount(ms){
+  var svg = $("chartCount"); svg.innerHTML = "";
+  if (!ms.length){ empty(svg, "표시할 거래가 없습니다"); return; }
+  var rent = MODE === "rent";
+  var hasJ = ms.some(function(m){ return m.nJeonse > 0; });
+  var hasW = ms.some(function(m){ return m.nWolse > 0; });
+  $("legCount").innerHTML = (rent && hasJ && hasW)
+    ? '<span><i style="background:' + css("--c-price") + '"></i>전세</span><span><i style="background:' + css("--c-count") + '"></i>월세</span>'
+    : "";
+  var W = 900, H = 220, L = 66, R = 60, T = 18, Bm = 38;
+  var mx = Math.max.apply(null, ms.map(function(m){ return m.n; })) || 1;
+  var iw = W-L-R, ih = H-T-Bm;
+  var slot = iw/ms.length;
+  var bw = Math.max(5, Math.min(38, slot-6));
+  var x = function(i){ return L + slot*(i+0.5); };
+
+  [0,0.5,1].forEach(function(f){
+    var yy = T + ih - ih*f;
+    svg.appendChild(svgEl("line", { x1:L, x2:W-R, y1:yy, y2:yy, stroke:css("--border-soft"), "stroke-width":1 }));
+    txt(svg, String(Math.round(mx*f)), { x:L-10, y:yy+4, "text-anchor":"end", fill:css("--ink-faint"), "font-size":"11" });
+  });
+  txt(svg, "건", { x:L-10, y:T-7, "text-anchor":"end", fill:css("--ink-faint"), "font-size":"10.5" });
+
+  ms.forEach(function(m,i){
+    if (rent && hasJ && hasW){
+      var hw = bw/2 - 1;
+      [[m.nJeonse, css("--c-price"), -1],[m.nWolse, css("--c-count"), 1]].forEach(function(p){
+        if (!p[0]) return;
+        var h = Math.max(2, ih*p[0]/mx);
+        svg.appendChild(svgEl("rect", { x:x(i) + (p[2] < 0 ? -hw-1 : 1), y:T+ih-h, width:hw, height:h, rx:Math.min(3,hw/2), fill:p[1] }));
+      });
+    } else {
+      var h2 = Math.max(2, ih*m.n/mx);
+      var fill = (rent && hasJ && !hasW) ? css("--c-price") : css("--c-count");
+      svg.appendChild(svgEl("rect", { x:x(i)-bw/2, y:T+ih-h2, width:bw, height:h2, rx:Math.min(4,bw/2), fill:fill }));
+    }
+  });
+  var step = Math.ceil(ms.length/9);
+  ms.forEach(function(m,i){
+    if (i % step === 0 || i === ms.length-1)
+      txt(svg, ymLabel(m.ym), { x:x(i), y:H-14, "text-anchor":"middle", fill:css("--ink-faint"), "font-size":"11" });
+  });
+  hover(svg, $("tipCount"), ms, x, function(m){
+    var s = "<div><b>" + m.ym.slice(0,4) + "년 " + (+m.ym.slice(4)) + "월</b></div>";
+    if (rent) s += '<div><span class="tk">전세</span>' + m.nJeonse + '건</div><div><span class="tk">월세</span>' + m.nWolse + "건</div>";
+    else s += '<div><span class="tk">거래 건수</span>' + m.n + "건</div>";
+    return s;
+  }, W, T, ih);
+}
+function hover(svg, tip, ms, x, html, W, T, ih){
+  var line = svgEl("line", { y1:T, y2:T+ih, stroke:css("--border"), "stroke-width":1, "stroke-dasharray":"3 3", opacity:0 });
+  svg.appendChild(line);
+  svg.appendChild(svgEl("rect", { x:0, y:0, width:W, height:T+ih+30, fill:"transparent" }));
+  function move(ev){
+    var box = svg.getBoundingClientRect();
+    var cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - box.left;
+    var sx = cx/box.width*W, best = 0, bd = 1e9;
+    ms.forEach(function(m,i){ var dd = Math.abs(x(i)-sx); if (dd < bd){ bd = dd; best = i; } });
+    line.setAttribute("x1", x(best)); line.setAttribute("x2", x(best)); line.setAttribute("opacity", 1);
+    tip.innerHTML = html(ms[best]);
+    tip.classList.add("on");
+    var px = x(best)/W*box.width;
+    tip.style.left = Math.max(4, Math.min(box.width - tip.offsetWidth - 4, px - tip.offsetWidth/2)) + "px";
+    tip.style.top = "4px";
+  }
+  function out(){ line.setAttribute("opacity", 0); tip.classList.remove("on"); }
+  svg.addEventListener("mousemove", move);
+  svg.addEventListener("mouseleave", out);
+  svg.addEventListener("touchstart", move, {passive:true});
+  svg.addEventListener("touchmove", move, {passive:true});
+  svg.addEventListener("touchend", out);
+}
+
+/* ═══════════ 지도 ═══════════ */
+var RAMP = ["#F0D2D7","#DCA2AB","#C4737F","#A62B3C","#6E1C28"];
+var map = null, geocoder = null, mapReady = false, overlays = [], infow = null, geoCache = {};
+try { geoCache = JSON.parse(localStorage.getItem("panbokgi.geo") || "{}"); } catch(e){ geoCache = {}; }
+function saveCache(){ try { localStorage.setItem("panbokgi.geo", JSON.stringify(geoCache)); } catch(e){} }
+
+function initMap(){
+  if (window.__kakaoFailed || !window.kakao || !window.kakao.maps){
+    $("mapMsg").innerHTML = "지도를 불러오지 못했습니다."
+      + "<br>카카오 개발자 콘솔 → 내 애플리케이션 → <b>앱 설정 → 플랫폼 → Web</b> 에"
+      + "<br>아래 주소가 <b>사이트 도메인</b>으로 등록되어 있는지,"
+      + "<br>그리고 <b>JavaScript 키</b>(32자리)가 맞는지 확인해주세요."
+      + '<br><br><b style="font-size:14px">' + esc(location.origin) + "</b>";
+    return;
+  }
+  kakao.maps.load(function(){
+    try {
+      $("map").innerHTML = "";
+      map = new kakao.maps.Map($("map"), { center:new kakao.maps.LatLng(37.5665, 126.9780), level:6 });
+      map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+      geocoder = new kakao.maps.services.Geocoder();
+      infow = new kakao.maps.InfoWindow({ removable:true, zIndex:5 });
+      mapReady = true;
+      if (VIEW.length) drawMap(byComplex(VIEW).slice(0,60));
+    } catch(e){
+      $("map").innerHTML = '<div id="mapMsg">지도를 그리는 중 문제가 생겼습니다: ' + esc(e.message) + "</div>";
+    }
+  });
+}
+function clearMap(){
+  overlays.forEach(function(o){ o.setMap(null); });
+  overlays = [];
+  if (infow) infow.close();
+}
+var geoToken = 0;
+function drawMap(cx){
+  if (!mapReady) return;
+  clearMap();
+  var token = ++geoToken;
+  var pers = cx.map(function(c){ return c.per; }).filter(function(v){ return v > 0; }).sort(function(a,b){ return a-b; });
+  function bucket(v){
+    if (!pers.length || !(v > 0)) return 2;
+    var i = 0;
+    while (i < 5 && v > pers[Math.floor(pers.length*(i+1)/5) - 1]) i++;
+    return Math.min(4, i);
+  }
+  var maxN = cx.length ? cx[0].n : 1;
+  var bounds = new kakao.maps.LatLngBounds();
+  var done = 0, placed = 0;
+  function stat(){
+    if (!placed && done >= cx.length && cx.length)
+      $("geoStat").innerHTML = "주소를 좌표로 바꾸지 못했습니다 — 카카오 콘솔에 " + esc(location.origin) + " 등록 여부를 확인해주세요.";
+    else
+      $("geoStat").textContent = "지도 표시 " + placed + " / " + cx.length + "곳";
+  }
+  stat();
+
+  function place(c, lat, lng){
+    if (token !== geoToken) return;
+    var pos = new kakao.maps.LatLng(lat, lng);
+    var d = Math.round(16 + 22*Math.sqrt(c.n/maxN));
+    var el = document.createElement("div");
+    el.className = "mk";
+    el.style.cssText = "width:" + d + "px;height:" + d + "px;background:" + RAMP[bucket(c.per)] + ";";
+    el.title = c.name;
+    el.addEventListener("click", function(){
+      infow.setContent('<div class="iw"><b>' + esc(c.name) + "</b>"
+        + esc(c.dong) + (c.jibun ? " " + esc(c.jibun) : "") + "<br>"
+        + "거래 " + c.n + "건 · 평균 평당 " + (c.per > 0 ? comma(c.per) + "만원" : "—") + "<br>"
+        + eok(c.min) + " ~ " + eok(c.max) + "</div>");
+      infow.setPosition(pos);
+      infow.open(map);
+    });
+    var ov = new kakao.maps.CustomOverlay({ position:pos, content:el, yAnchor:0.5, xAnchor:0.5, clickable:true });
+    ov.setMap(map);
+    overlays.push(ov);
+    c._pos = pos;
+    bounds.extend(pos);
+    placed++; stat();
+    if (placed === 1 || placed % 6 === 0) map.setBounds(bounds);
+  }
+  function next(i){
+    if (token !== geoToken || i >= cx.length){
+      if (token === geoToken && placed > 0) map.setBounds(bounds);
+      stat();
+      return;
+    }
+    var c = cx[i];
+    var addr = (SGG_LABEL.replace(/^서울\s/, "서울특별시 ") + " " + c.dong + " " + (c.jibun || "")).trim();
+    var hit = geoCache[addr];
+    if (hit){
+      if (hit.lat) place(c, hit.lat, hit.lng);
+      done++;
+      next(i+1);
+      return;
+    }
+    geocoder.addressSearch(addr, function(res, status){
+      if (token !== geoToken) return;
+      if (status === kakao.maps.services.Status.OK && res[0]){
+        geoCache[addr] = { lat:+res[0].y, lng:+res[0].x };
+        place(c, +res[0].y, +res[0].x);
+      } else {
+        geoCache[addr] = { lat:0, lng:0 };
+      }
+      done++;
+      if (done % 10 === 0) saveCache();
+      setTimeout(function(){ next(i+1); }, 40);
+    });
+  }
+  next(0);
+  setTimeout(saveCache, 4000);
+}
+
+/* ═══════════ 그리기 ═══════════ */
+function cell(k, v, u, s){
+  return '<div class="cell"><div class="k">' + k + '</div><div class="v mono">' + v +
+    '<span class="u">' + u + '</span></div><div class="s">' + s + "</div></div>";
+}
+function render(){
+  var rows = VIEW, ms = monthly(rows), pr = priceRows(rows);
+  var last = ms.length ? ms[ms.length-1] : null;
+  var firstP = ms.filter(function(m){ return m.per > 0; })[0];
+  var lastP  = ms.filter(function(m){ return m.per > 0; }).pop();
+  var chg = (firstP && lastP && firstP.per) ? (lastP.per - firstP.per)/firstP.per*100 : 0;
+  var rent = MODE === "rent";
+
+  $("t1").textContent = rent ? "월별 전세 보증금 평당가" : "월별 평균 평당가";
+
+  $("ledger").innerHTML = [
+    cell(rent ? "전월세 건수" : "거래 건수", comma(rows.length), "건",
+      ms.length ? (ms[0].ym.slice(0,4) + "." + ms[0].ym.slice(4) + " ~ " + last.ym.slice(0,4) + "." + last.ym.slice(4)) : "—"),
+    cell(rent ? "보증금 중위값" : "거래금액 중위값", rows.length ? eok(median(rows.map(function(r){ return r.amount; }))) : "—", "",
+      rent ? "월세 포함 보증금 기준" : "가장 가운데 있는 거래"),
+    cell(rent ? "전세 평균 평당가" : "평균 평당가", pr.length ? comma(mean(pr.map(function(r){ return r.per; }))) : "—", "만원",
+      rent ? "월세는 제외하고 계산" : "전용면적 기준"),
+    cell("첫 달 대비", (chg >= 0 ? "+" : "") + chg.toFixed(1), "%", "평당가 변화")
+  ].join("");
+
+  drawPrice(ms);
+  drawCount(ms);
+
+  var cx = byComplex(rows).slice(0, 30);
+  var maxN = cx.length ? cx[0].n : 1;
+  var pers = cx.map(function(c){ return c.per; }).filter(function(v){ return v > 0; }).sort(function(a,b){ return a-b; });
+  function bucket(v){
+    if (!pers.length || !(v > 0)) return 2;
+    var i = 0;
+    while (i < 5 && v > pers[Math.floor(pers.length*(i+1)/5) - 1]) i++;
+    return Math.min(4, i);
+  }
+  $("tbl").innerHTML = cx.map(function(c, i){
+    return '<tr data-key="' + esc(c.key) + '">'
+      + "<td>" + (i+1) + "</td>"
+      + '<td class="name"><span class="pin" style="background:' + RAMP[bucket(c.per)] + '"></span>' + esc(c.name)
+      + '<span class="sub2">' + esc(c.dong) + (c.jibun ? " " + esc(c.jibun) : "") + (c.yr ? " · " + esc(c.yr) + "년" : "") + "</span></td>"
+      + '<td class="mono">' + c.n + "</td>"
+      + '<td class="mono">' + (c.per > 0 ? comma(c.per) : "—") + "</td>"
+      + '<td class="mono">' + eok(c.min) + "</td>"
+      + '<td class="mono">' + eok(c.max) + "</td>"
+      + '<td class="mono">' + ymLabel(c.last) + "</td></tr>";
+  }).join("") || '<tr><td colspan="7" style="padding:20px 0;color:var(--ink-faint)">조건에 맞는 거래가 없습니다.</td></tr>';
+
+  window.__cx = cx;
+  if (mapReady) drawMap(cx.slice(0, 60));
+  $("brief").textContent = brief(rows, ms, cx);
+}
+function brief(rows, ms, cx){
+  if (!rows.length) return "조건에 맞는 거래가 없습니다.";
+  var rent = MODE === "rent", pr = priceRows(rows), L = [];
+  L.push("[실거래 요약] " + SGG_LABEL + " · " + (rent ? "아파트 전월세" : "아파트/주택 매매"));
+  L.push("기간: " + ms[0].ym + " ~ " + ms[ms.length-1].ym + "  |  총 " + rows.length + "건");
+  if (rent){
+    L.push("전세 " + rows.filter(function(r){ return r.kind === "jeonse"; }).length +
+           "건 / 월세 " + rows.filter(function(r){ return r.kind === "wolse"; }).length + "건");
+    L.push("전세 평균 평당가: " + comma(mean(pr.map(function(r){ return r.per; }))) +
+           "만원  |  보증금 중위값: " + eok(median(rows.map(function(r){ return r.amount; }))));
+  } else {
+    L.push("평균 평당가(전용): " + comma(mean(pr.map(function(r){ return r.per; }))) +
+           "만원  |  거래금액 중위값: " + eok(median(rows.map(function(r){ return r.amount; }))));
+  }
+  L.push("");
+  L.push("월별 (계약년월 / 건수 / 평균 평당가 만원 / 금액 중위값 만원)");
+  ms.forEach(function(m){ L.push("  " + m.ym + "\t" + m.n + "\t" + Math.round(m.per) + "\t" + Math.round(m.med)); });
+  L.push("");
+  L.push("거래 많은 단지 (이름 / 건수 / 평균 평당가 만원 / 최저~최고 만원)");
+  cx.slice(0,10).forEach(function(c){
+    L.push("  " + c.name + "\t" + c.n + "\t" + Math.round(c.per) + "\t" + Math.round(c.min) + "~" + Math.round(c.max));
+  });
+  L.push("");
+  L.push("[질문] 위 자료를 바탕으로 ① 가격 흐름의 방향과 변곡점, ② 거래량과 가격의 관계, ③ 단지별 가격 서열과 그 이유로 볼 만한 점, ④ 중개 현장에서 손님에게 설명할 핵심 문장 3개를 정리해 주세요. 자료에 없는 수치는 추정하지 말고 '자료에 없음'이라고 표시해 주세요.");
+  L.push("※ 출처: 국토교통부 실거래 공공데이터. 전용면적 기준(1평=3.3058㎡)." + (rent ? " 월세 건은 평당가 계산에서 제외." : ""));
+  return L.join("\n");
+}
+
+/* ═══════════ 이벤트 ═══════════ */
+REGIONS.forEach(function(r){
+  var o = document.createElement("option");
+  o.value = r[0]; o.textContent = r[1];
+  $("fRegion").appendChild(o);
+});
+(function(){
+  var o = document.createElement("option");
+  o.value = "custom"; o.textContent = "그 밖의 지역 (코드 직접 입력)";
+  $("fRegion").appendChild(o);
+})();
+$("fRegion").value = "11260";
+$("fRegion").addEventListener("change", function(){
+  $("wrapCustom").hidden = this.value !== "custom";
+});
+(function(){
+  var d = new Date(); d.setMonth(d.getMonth()-1);
+  $("fEnd").value = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2);
+})();
+$("ramp").innerHTML = RAMP.map(function(c){ return '<i style="background:' + c + '"></i>'; }).join("");
+
+$("btnFetch").addEventListener("click", fetchApi);
+$("modes").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-mode]");
+  if (!b) return;
+  [].forEach.call(this.querySelectorAll("button"), function(x){ x.classList.toggle("active", x === b); });
+  $("m-api").classList.toggle("active", b.dataset.mode === "api");
+  $("m-csv").classList.toggle("active", b.dataset.mode === "csv");
+});
+["fDong","fArea","fRentKind"].forEach(function(id){ $(id).addEventListener("change", applyFilters); });
+$("fName").addEventListener("input", applyFilters);
+$("pick").addEventListener("click", function(){ $("file").click(); });
+$("file").addEventListener("change", function(e){ readFile(e.target.files[0]); });
+var drop = $("drop");
+["dragenter","dragover"].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("over"); }); });
+["dragleave","drop"].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("over"); }); });
+drop.addEventListener("drop", function(e){ readFile(e.dataTransfer.files[0]); });
+$("tbl").addEventListener("click", function(e){
+  var tr = e.target.closest("tr[data-key]");
+  if (!tr || !mapReady) return;
+  var c = (window.__cx || []).filter(function(z){ return z.key === tr.dataset.key; })[0];
+  if (c && c._pos){ map.setLevel(3); map.panTo(c._pos); }
+});
+$("copyBrief").addEventListener("click", function(){
+  var b = this, t = $("brief").textContent;
+  function done(ok){
+    b.textContent = ok ? "복사했습니다" : "복사 실패 — 직접 선택해주세요";
+    setTimeout(function(){ b.textContent = "브리핑 복사"; }, 1800);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(t).then(function(){ done(true); }, function(){ done(false); });
+  else done(false);
+});
+addEventListener("resize", function(){ if (VIEW.length) { drawPrice(monthly(VIEW)); drawCount(monthly(VIEW)); } });
+
+/* 첫 화면: 빈 차트 자리를 만들어 두고 지도 준비 */
+empty($("chartPrice"), "조회하면 여기에 추이가 그려집니다");
+empty($("chartCount"), "조회하면 여기에 건수가 그려집니다");
+$("ledger").innerHTML = [
+  cell("거래 건수","—","건","조회 전"),
+  cell("거래금액 중위값","—","","조회 전"),
+  cell("평균 평당가","—","만원","조회 전"),
+  cell("첫 달 대비","—","%","조회 전")
+].join("");
+$("brief").textContent = "조회하면 여기에 AI에 넘길 요약문이 만들어집니다.";
+
+var tries = 0;
+(function waitKakao(){
+  if (window.kakao && window.kakao.maps){ initMap(); return; }
+  if (window.__kakaoFailed || ++tries > 60){ initMap(); return; }
+  setTimeout(waitKakao, 100);
+})();
+
+})();
+</script>
+</body>
+</html>
