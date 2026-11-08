@@ -53,7 +53,7 @@ function textSprite(text, color = "#1D2C5E", bg = "rgba(255,255,255,.92)") {
   return sp;
 }
 
-export function createView(el, { thumb = false, scrollFriendly = false } = {}) {
+export function createView(el, { thumb = false, scrollFriendly = false, onTap = null } = {}) {
   const renderer = new THREE.WebGLRenderer({ antialias: !thumb, alpha: true, preserveDrawingBuffer: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, thumb ? 1.5 : 2));
   renderer.shadowMap.enabled = !thumb;
@@ -87,6 +87,13 @@ export function createView(el, { thumb = false, scrollFriendly = false } = {}) {
       // 휴대폰 본문 화면: 한 손가락은 페이지 스크롤, 두 손가락으로 회전·확대
       controls.touches = { ONE: null, TWO: THREE.TOUCH.DOLLY_ROTATE };
       host.style.touchAction = "pan-y";
+    }
+    if (onTap) {
+      let sx = 0, sy = 0, st = 0;
+      host.addEventListener("pointerdown", (e) => { sx = e.clientX; sy = e.clientY; st = performance.now(); });
+      host.addEventListener("pointerup", (e) => {
+        if (Math.hypot(e.clientX - sx, e.clientY - sy) < 8 && performance.now() - st < 350) onTap();
+      });
     }
   }
 
@@ -293,6 +300,19 @@ export function createView(el, { thumb = false, scrollFriendly = false } = {}) {
     north: new THREE.Vector3(0, 0.45, -1),
   };
 
+  // 대상 중심으로 수평 회전(deg) / 위아래 기울이기(deg)
+  function orbit(dYaw, dPitch) {
+    const tgt = controls ? controls.target : center;
+    const off = camera.position.clone().sub(tgt);
+    const sph = new THREE.Spherical().setFromVector3(off);
+    sph.theta += (dYaw * Math.PI) / 180;
+    sph.phi = Math.min(Math.PI * 0.49, Math.max(0.05, sph.phi - (dPitch * Math.PI) / 180));
+    off.setFromSpherical(sph);
+    camera.position.copy(tgt.clone().add(off));
+    camera.lookAt(tgt);
+    controls?.update();
+  }
+
   function zoom(f) {
     const dir = camera.position.clone().sub(controls ? controls.target : center);
     dir.multiplyScalar(f);
@@ -314,7 +334,10 @@ export function createView(el, { thumb = false, scrollFriendly = false } = {}) {
     renderer.render(scene, camera);
   }
   loop();
-  const ro = new ResizeObserver(() => resize());
+  // 사용자가 직접 돌리기 전에는 크기가 바뀔 때마다 전체가 보이게 다시 맞춤
+  let userMoved = false;
+  controls?.addEventListener("start", () => { userMoved = true; });
+  const ro = new ResizeObserver(() => { resize(); if (!userMoved && lastBox) fit(); });
   ro.observe(host.parentElement || host);
 
   function destroy() {
@@ -327,9 +350,9 @@ export function createView(el, { thumb = false, scrollFriendly = false } = {}) {
   }
 
   return {
-    update, resize, zoom, destroy,
-    fit: () => fit(),
-    view: (name) => fit(VIEWS[name] || VIEWS.iso),
+    update, resize, zoom, destroy, orbit,
+    fit: () => { userMoved = false; fit(); },
+    view: (name) => { userMoved = false; fit(VIEWS[name] || VIEWS.iso); },
     dom: host, setAuto: (a) => (auto = a),
   };
 }

@@ -54,7 +54,7 @@ export function createMap(el, { onPick, vworldKey } = {}) {
   function poly(origin, pts, style) {
     return L.polygon(pts.map(([x, z]) => toLatLng(origin, x, z)), style);
   }
-  function rectB(origin, x1, z1, x2, z2, style) {
+  function rect(origin, x1, z1, x2, z2, style) {
     return poly(origin, [[x1, z1], [x2, z1], [x2, z2], [x1, z2]], style);
   }
 

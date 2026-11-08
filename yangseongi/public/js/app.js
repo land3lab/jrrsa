@@ -46,6 +46,17 @@ function compute() {
       P.site.northSetback = Math.max(0, Math.round((bld.minZ - siteMinZ) * 10) / 10);
     }
   }
+  if (!bld && siteLocal && siteLocal.length > 2 && origin) {
+    const polyArea = Math.abs(siteLocal.reduce((s2, p, i) => { const q = siteLocal[(i + 1) % siteLocal.length]; return s2 + p[0] * q[1] - q[0] * p[1]; }, 0) / 2);
+    const arch = +P.legal.archArea || 0;
+    if (polyArea > 0 && arch > 0) {
+      const k = Math.min(0.97, Math.sqrt(arch / polyArea));
+      const cx = siteLocal.reduce((s2, p) => s2 + p[0], 0) / siteLocal.length, cz = siteLocal.reduce((s2, p) => s2 + p[1], 0) / siteLocal.length;
+      const pts = siteLocal.map(([x, z]) => [cx + (x - cx) * k, cz + (z - cz) * k]);
+      const xs = pts.map((p) => p[0]), zs = pts.map((p) => p[1]);
+      bld = { pts, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs), approx: true };
+    }
+  }
   const R = analyze(P);
   R.bld = bld;
   R.origin = origin; R.siteLocal = siteLocal;
@@ -257,10 +268,11 @@ function sheetView3d(b) {
     </div>
     <div class="big3d-wrap" id="bigWrap">
       <div id="big3d"></div>
-      <div class="v-tools"><button data-bz="+" aria-label="확대">＋</button><button data-bz="-" aria-label="축소">－</button><button data-bz="fit" aria-label="전체 보기">◎</button></div>
+      <div class="v-tools"><button data-bz="+" aria-label="확대">＋</button><button data-bz="-" aria-label="축소">－</button><button data-bz="fit" aria-label="전체 보기">◎</button><button data-bz="fs" aria-label="전체화면">⛶</button></div>
+      <div class="rot-tools"><button data-bz="l" aria-label="왼쪽으로 돌리기">↺</button><button data-bz="up" aria-label="위에서 보기">⤒</button><button data-bz="down" aria-label="옆에서 보기">⤓</button><button data-bz="r" aria-label="오른쪽으로 돌리기">↻</button></div>
       <div class="v-legend"><i style="background:#FFF1D6;border:1px solid #1D2C5E"></i>대장(적법) <i style="background:#F28C38"></i>위반 <i style="background:#2FB67C"></i>존치 <i style="background:#E24A4A;opacity:.5"></i>철거 <i style="background:#4A7BD8;opacity:.5"></i>일조사선</div>
     </div>
-    <p style="font-size:12.5px;color:var(--ink-2);margin:8px 0">한 손가락: 회전 · 두 손가락: 확대·이동 · 위 버튼으로 시점 바꾸기</p>
+    <p style="font-size:12.5px;color:var(--ink-2);margin:8px 0">↺ ↻ 돌리기 · ⤒ ⤓ 기울이기 · ＋－ 확대 · ⛶ 전체화면 — 손가락으로도 회전(한 손가락)·확대(두 손가락) 됩니다</p>
     <div class="note">${real ? "건물 모양은 <b>브이월드 실제 건물 외곽선</b>, 층수·높이는 건축물대장 값입니다." : "실제 건물 외곽선을 찾지 못해 <b>대장 면적으로 만든 개략 모델</b>입니다 (브이월드 건물 정보가 있는 주소는 실제 모양으로 표시)."}
     증축·철거 부분은 위치를 단순화한 상자로 표시합니다. 파란 반투명 면은 개정 건축법 제61조 정북 일조 한계(1.5m·5m·h/2)입니다.</div>`;
   S.bigMode = "after";
@@ -286,7 +298,11 @@ function sheetView3d(b) {
   };
   $("#bigWrap .v-tools").onclick = (e) => {
     const z = e.target.dataset.bz; if (!z || !bigView) return;
-    if (z === "+") bigView.zoom(0.75); else if (z === "-") bigView.zoom(1.33); else bigView.fit();
+    if (z === "+") bigView.zoom(0.75); else if (z === "-") bigView.zoom(1.33);
+    else if (z === "l") bigView.orbit(-30, 0); else if (z === "r") bigView.orbit(30, 0);
+    else if (z === "up") bigView.orbit(0, 15); else if (z === "down") bigView.orbit(0, -15);
+    else if (z === "fs") toggleFull($("#bigWrap"));
+    else bigView.fit();
   };
 }
 
@@ -808,7 +824,7 @@ function applyLookup(j, params, keepLegal) {
     S.P.parcelRing = j.parcel?.ring || null;
     S.P.sources = ["샘플(예시 값)", "건축HUB 응답 없음"];
     toast("건축HUB 응답이 없어 샘플 예시 값으로 보여드립니다.");
-    render(); mapV?.fit(); view?.fit(); view?.update(S.P, S.R, S.mode);
+    render(); mapV?.fit(); view?.update(S.P, S.R, S.mode); view?.fit();
     return;
   }
   const P = keepLegal ? prev : emptyProject();
@@ -891,7 +907,7 @@ function applyLookup(j, params, keepLegal) {
   else if (!P.site.zone) toast("용도지역을 자동으로 찾지 못했습니다. '대장 정보'에서 선택해 주세요.");
   render();
   mapV?.fit();
-  view?.fit(); view?.update(S.P, S.R, S.mode);
+  view?.update(S.P, S.R, S.mode); view?.fit();
 }
 
 // ───────────────────────── 지도에서 선택
@@ -912,6 +928,22 @@ async function onPick(latlng) {
   }
   lookup({ lat: latlng.lat.toFixed(7), lng: latlng.lng.toFixed(7) });
 }
+
+// ───────────────────────── 전체화면 (지원 안 되는 아이폰은 화면 가득 채우기로 대체)
+function toggleFull(el) {
+  if (!el) return;
+  const doc = document;
+  const after = () => setTimeout(() => { mapV?.invalidate(); view?.resize(); bigView?.resize(); bigView?.fit(); }, 120);
+  if (doc.fullscreenElement || el.classList.contains("fs")) {
+    if (doc.fullscreenElement) doc.exitFullscreen?.();
+    el.classList.remove("fs"); document.body.classList.remove("fs-on");
+    after(); return;
+  }
+  if (el.requestFullscreen) {
+    el.requestFullscreen().then(after).catch(() => { el.classList.add("fs"); document.body.classList.add("fs-on"); after(); });
+  } else { el.classList.add("fs"); document.body.classList.add("fs-on"); after(); }
+}
+document.addEventListener("fullscreenchange", () => setTimeout(() => { mapV?.invalidate(); view?.resize(); bigView?.resize(); bigView?.fit(); }, 120));
 
 // ───────────────────────── 공통 UI
 let toastT = 0;
@@ -945,7 +977,7 @@ function bind() {
     lookup({ q });
   };
   document.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-act],[data-sheet],[data-open],[data-close],[data-z],[data-go]");
+    const el = e.target.closest("[data-act],[data-sheet],[data-open],[data-close],[data-z],[data-go],[data-fs]");
     if (!el) return;
     if (el.dataset.act) {
       const a = el.dataset.act;
@@ -962,7 +994,9 @@ function bind() {
     } else if (el.dataset.open) {
       e.preventDefault(); history.replaceState({ v: "sheet", id: el.dataset.open }, "", `#${el.dataset.open}`); openSheet(el.dataset.open, false);
     } else if (el.dataset.close != null && el.hasAttribute("data-close")) { back(); }
-    else if (el.dataset.z) {
+    else if (el.dataset.fs) {
+      toggleFull(document.getElementById(el.dataset.fs));
+    } else if (el.dataset.z) {
       const z = el.dataset.z;
       if (z === "map+") mapV.zoom(1); else if (z === "map-") mapV.zoom(-1); else if (z === "mapfit") mapV.fit();
       else if (z === "3d+") view.zoom(0.8); else if (z === "3d-") view.zoom(1.25); else if (z === "3dfit") view.fit();
@@ -1027,10 +1061,10 @@ async function init() {
   setupNavSpy();
   try { S.cfg = await fetch("../api/ys-config").then((r) => (r.ok ? r.json() : {})); } catch { S.cfg = {}; }
   try { mapV = createMap($("#map"), { onPick, vworldKey: S.cfg.vworldKey }); } catch (e) { console.warn("지도 초기화 실패", e); }
-  try { view = createView($("#three"), { scrollFriendly: matchMedia("(pointer: coarse)").matches }); } catch (e) { console.warn("3D 초기화 실패", e); }
+  try { view = createView($("#three"), { scrollFriendly: matchMedia("(pointer: coarse)").matches, onTap: () => { if (matchMedia("(pointer: coarse)").matches) openSheet("view3d"); } }); } catch (e) { console.warn("3D 초기화 실패", e); }
   try { thumb = createView($("#thumb"), { thumb: true }); } catch (e) { console.warn(e); }
   render();
-  mapV?.fit(); view?.fit(); view?.update(S.P, S.R, S.mode);
+  mapV?.fit(); view?.update(S.P, S.R, S.mode); view?.fit();
   // 공유 링크: ?q=주소
   const q = new URLSearchParams(location.search).get("q");
   if (q) { $("#q").value = q; lookup({ q }); }

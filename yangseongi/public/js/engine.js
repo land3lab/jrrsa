@@ -54,7 +54,8 @@ export function layout(P) {
 
 function legalHeight(P) {
   const h = num(P.legal.height, 0);
-  if (h > 0) return h;
+  const fl = Math.max(1, num(P.legal.floorsAbove, 1));
+  if (h > 0 && h <= fl * 6 && h >= fl * 1.8) return h;
   return Math.max(1, num(P.legal.floorsAbove, 1)) * FLOOR_H;
 }
 
