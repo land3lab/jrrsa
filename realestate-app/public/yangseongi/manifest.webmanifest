@@ -1,0 +1,22 @@
+{
+  "name": "양성이 — 위반건축물 양성화 시뮬레이터",
+  "short_name": "양성이",
+  "description": "주소·건축물대장으로 위반 여부, 양성화 대상·가능 여부, 전후 차이를 지도와 3D로 확인 (랜드3 연구소)",
+  "id": "/yangseongi/",
+  "start_url": "/yangseongi/",
+  "scope": "/yangseongi/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16224A",
+  "theme_color": "#16224A",
+  "lang": "ko",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    { "src": "/yangseongi/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/yangseongi/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/yangseongi/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "대장 첨부", "url": "/yangseongi/#upload", "icons": [{ "src": "/yangseongi/icons/icon-96.png", "sizes": "96x96" }] }
+  ]
+}

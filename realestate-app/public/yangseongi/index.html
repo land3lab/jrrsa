@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>양성이 — 위반건축물 양성화 시뮬레이터 | 랜드3 연구소</title>
+<meta name="description" content="주소나 건축물대장만 넣으면 위반 여부, 양성화 대상·가능 여부, 전후 차이를 지도와 3D로 바로 보여주는 도구 (특정건축물 정리에 관한 특별조치법 2026.12.17 시행 반영)">
+<meta name="theme-color" content="#16224A">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="양성이">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="./vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="./css/app.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <img src="./icons/icon-96.png" alt="양성이 로고">
+      <div><b>양성이</b><small>위반건축물 양성화 시뮬레이터 · 랜드3 연구소</small></div>
+    </div>
+    <button class="icon-btn accent" id="installBtn" hidden>⬇ 설치</button>
+    <button class="icon-btn" id="accountBtn">👤 로그인</button>
+  </div>
+</header>
+
+<div class="search-wrap">
+  <form class="search" id="searchForm" autocomplete="off">
+    <div class="search-row">
+      <input id="q" type="search" inputmode="search" enterkeyhint="search" placeholder="도로명·지번 주소 (예: 관악구 봉천동 1527-11)" aria-label="주소">
+      <button class="btn btn-main" type="submit">분석</button>
+    </div>
+    <div class="chips">
+      <button type="button" class="chip" data-act="postcode">🔎 주소검색</button>
+      <button type="button" class="chip" data-act="pick">🗺️ 지도에서 선택</button>
+      <button type="button" class="chip" data-act="upload">📎 건축물대장·이미지·PDF</button>
+      <button type="button" class="chip" data-act="register">🏛️ 대장 정보</button>
+      <button type="button" class="chip" data-act="viol-edit">✏️ 위반 내역</button>
+      <button type="button" class="chip" data-act="sample">샘플: 봉천동 1527-11</button>
+    </div>
+    <div class="src-line" id="srcLine"></div>
+  </form>
+</div>
+
+<main>
+  <div class="headline" id="headline"><span class="dot"></span><div><div class="t">주소를 넣으면 바로 분석합니다</div><div class="a"></div></div></div>
+
+  <!-- 필수 4기능: 한눈에 -->
+  <section class="essentials" id="ess">
+    <button class="ess" data-sheet="violation"><span class="no">1</span><h3>위반건축물 여부</h3><div id="e1"></div><span class="more">해당사항 자세히 ›</span></button>
+    <button class="ess" data-sheet="eligibility"><span class="no">2</span><h3>양성화 대상 · 가능 여부</h3><div id="e2"></div><span class="more">요건 체크 ›</span></button>
+    <button class="ess" data-sheet="compare"><span class="no">3</span><h3>양성화 전후 차이</h3><div id="e3"></div><span class="more">기준별 한도 ›</span></button>
+    <div class="ess" role="button" tabindex="0" data-sheet="view3d"><span class="no">4</span><h3>전후 3D 분석</h3>
+      <canvas class="thumb" id="thumb"></canvas>
+      <div class="seg o" id="thumbSeg"><button data-m="before">전</button><button data-m="current">현황</button><button class="on" data-m="after">후</button></div>
+      <span class="more">크게 보기 ›</span></div>
+  </section>
+
+  <!-- 지도 + 3D -->
+  <section class="panel" id="viewerPanel">
+    <div class="panel-bar">
+      <span class="title">🗺️ 지도 · 🧊 3D 시뮬레이션</span>
+      <div class="seg" id="layoutSeg"><button class="on" data-l="both">나란히</button><button data-l="map">지도</button><button data-l="3d">3D</button></div>
+      <div class="seg o" id="modeSeg"><button data-m="before">양성화 전</button><button data-m="current">현황</button><button class="on" data-m="after">양성화 후</button></div>
+    </div>
+    <div class="viewer two" id="viewer">
+      <div id="mapBox">
+        <div id="map"></div>
+        <div class="v-tools"><button data-z="map+" aria-label="지도 확대">＋</button><button data-z="map-" aria-label="지도 축소">－</button><button data-z="mapfit" aria-label="대상지로">◎</button></div>
+        <div class="v-legend"><i style="background:#FFF1D6;border:1px solid #1D2C5E"></i>대장(적법) <i style="background:#F28C38"></i>위반 <i style="background:#2FB67C"></i>존치 <i style="background:#E24A4A;opacity:.5"></i>철거 <i style="background:#4A7BD8"></i>일조선</div>
+      </div>
+      <div id="threeBox">
+        <div id="three"></div>
+        <div class="v-label" id="threeLabel">양성화 후</div>
+        <div class="v-tools"><button data-z="3d+" aria-label="3D 확대">＋</button><button data-z="3d-" aria-label="3D 축소">－</button><button data-z="3dfit" aria-label="시점 초기화">◎</button></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="sec-title">추가 기능 — 차례로 보기</div>
+  <section class="tiles" id="tiles"></section>
+
+  <p class="foot">
+    양성이는 법령 원문(국가법령정보센터)을 기준으로 계산한 <b>사전 검토용 시뮬레이션</b>입니다.<br>
+    최종 판단은 관할 구청 건축과·건축위원회 심의와 건축사 현장조사에 따릅니다. · 법령 확인일 <span id="lawDate"></span>
+  </p>
+</main>
+
+<nav class="bnav" id="bnav">
+  <button class="on" data-go="top"><i>🏠</i>홈</button>
+  <button data-go="map"><i>🗺️</i>지도</button>
+  <button data-go="3d"><i>🧊</i>3D</button>
+  <button data-go="upload"><i>📎</i>첨부</button>
+  <button data-go="more"><i>☰</i>더보기</button>
+</nav>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-box" role="dialog" aria-modal="true">
+    <div class="sheet-head"><button id="sheetBack" aria-label="뒤로">←</button><h2 id="sheetTitle"></h2></div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
+</div>
+
+<input type="file" id="fileIn" accept="image/*,application/pdf,.pdf,.txt,.html,.htm,.xml" multiple hidden>
+<div class="loading" id="loading" hidden><div><span class="spin"></span><span id="loadingText">불러오는 중…</span></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="./vendor/leaflet/leaflet.js"></script>
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

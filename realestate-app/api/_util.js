@@ -1,6 +1,7 @@
 // Shared helpers for data.go.kr (공공데이터포털) proxy functions.
 // The service key lives ONLY here, server-side — never sent to the browser.
-const SERVICE_KEY = "7f6c358454733828dd692a66ac6b5d26c322e39bfee17bc6584fc9330276db1f";
+// 환경변수 DATA_GO_KR_KEY 가 있으면 우선 사용한다 (Vercel 프로젝트 설정 → Environment Variables).
+const SERVICE_KEY = process.env.DATA_GO_KR_KEY || "7f6c358454733828dd692a66ac6b5d26c322e39bfee17bc6584fc9330276db1f";
 
 function decodeEntities(s) {
   if (!s) return s;
