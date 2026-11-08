@@ -11,7 +11,7 @@ export function sampleProject() {
       roadAddress: "",
       sigunguCd: "11620", bjdongCd: "10100", platGbCd: "0", bun: "1527", ji: "11",
       isSeoul: true,
-      lat: 37.47915, lng: 126.95255, coordApprox: true,
+      lat: null, lng: null, // 실제 위치는 서버 조회(브이월드)로 받는다 — 임의 좌표를 쓰지 않음
     },
     site: {
       area: 165.0,

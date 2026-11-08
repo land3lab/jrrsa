@@ -762,8 +762,8 @@ function applyExample() {
 }
 
 // ───────────────────────── 주소 → 서버 조회
-async function lookup(params, { keepLegal = false, example = false } = {}) {
-  loading(true, "건축물대장·필지 정보를 불러오는 중…");
+async function lookup(params, { keepLegal = false, example = false, quiet = false } = {}) {
+  if (!quiet) loading(true, "건축물대장·필지 정보를 불러오는 중…");
   const qs = new URLSearchParams(params).toString();
   try {
     const r = await fetch(`../api/ys-lookup?${qs}`, { headers: { Accept: "application/json" } });
@@ -783,7 +783,7 @@ async function lookup(params, { keepLegal = false, example = false } = {}) {
       S.P = sampleProject();
       S.P.sources = ["샘플(예시 값) — 서버 조회 실패: " + (e.message || e)];
       render();
-      toast("서버 조회가 안 되어 샘플 예시 값으로 보여드립니다.");
+      if (!quiet) toast("서버 조회가 안 되어 샘플 예시 값으로 보여드립니다.");
     } else {
       toast("조회 실패: " + (e.message || e) + " — 대장을 첨부하거나 값을 직접 입력할 수 있습니다.");
     }
@@ -799,6 +799,7 @@ function applyLookup(j, params, keepLegal) {
     S.P.address = { ...S.P.address, ...(j.address || {}), lat: j.address?.lat || S.P.address.lat, lng: j.address?.lng || S.P.address.lng, isSeoul: true };
     S.P.parcelRing = j.parcel?.ring || null;
     S.P.sources = ["샘플(예시 값)", "건축HUB 응답 없음"];
+    if (!S.P.address.lat) S.P.sources.push("위치 미확인");
     toast("건축HUB 응답이 없어 샘플 예시 값으로 보여드립니다.");
     render(); mapV?.fit(); view?.update(S.P, S.R, S.mode); view?.fit();
     return;
@@ -1044,6 +1045,11 @@ async function init() {
   // 공유 링크: ?q=주소
   const q = new URLSearchParams(location.search).get("q");
   if (q) { $("#q").value = q; lookup({ q }); }
+  else {
+    // 첫 화면: 샘플 주소를 실제로 조회해서(정확한 위치·대장) 예시 위반으로 시뮬레이션
+    $("#q").value = SAMPLE_ADDRESS;
+    lookup({ q: SAMPLE_ADDRESS }, { example: true, quiet: true });
+  }
   if (SHEETS[startSheet] && startSheet !== "postcode") openSheet(startSheet);
   // 로그인 없이 사용 — 외부 로그인 서버는 불러오지 않는다 (기록은 이 기기에만 저장)
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
