@@ -280,3 +280,5 @@ body.fs-on{overflow:hidden}
 /* 본문 3D 탭 안내 (휴대폰만) */
 .tap-hint{display:none;position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:5;background:rgba(15,24,56,.75);color:#fff;font-size:12px;font-weight:800;padding:5px 10px;border-radius:8px;white-space:nowrap;pointer-events:none}
 @media (pointer:coarse){.tap-hint{display:block}}
+
+@media (max-width:420px){.hide-s{display:none}.top .icon-btn{padding:0 10px}}

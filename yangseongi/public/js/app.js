@@ -146,7 +146,7 @@ function renderTiles() {
     ["process", "🧾", "신고 절차 · 서류", "건축사 설계도서·현장조사서 → 30일 내 처리", ""],
     ["issue", "📄", "건축물대장 발급 · 열람", "정부24 발급 · 세움터 열람 · 건축HUB", ""],
     ["laws", "⚖️", "근거 법령 (검증)", `국가법령정보센터 대조 ${LAW_CHECKED_AT}`, ""],
-    ["account", "👤", "로그인 · 내 기록", A.auth.enabled ? (A.auth.user ? "서버에 자동 연결됨" : "외부 서버 로그인") : "이 기기에 저장", ""],
+    ["account", "💾", "내 기록", "로그인 없이 이 기기에 저장·불러오기", ""],
     ["install", "📱", "휴대폰에 설치", "홈 화면에 양성이 앱 추가", ""],
   ];
   $("#tiles").innerHTML = T.map(([id, ic, t, s, v]) => `<button class="tile" data-sheet="${id}"><span class="ic">${ic}</span><b>${t}</b><span>${esc(s)}</span>${v ? `<span class="val">${esc(v)}</span>` : ""}</button>`).join("");
@@ -168,7 +168,7 @@ const SHEETS = {
   process: ["특조법 신고 절차 · 준비 서류", sheetProcess],
   issue: ["건축물대장 발급 · 열람", sheetIssue],
   laws: ["근거 법령 (원문 대조)", sheetLaws],
-  account: ["로그인 · 내 기록", sheetAccount],
+  account: ["💾 내 기록", sheetAccount],
   install: ["휴대폰에 설치하기", sheetInstall],
   postcode: ["주소검색 (도로명 · 지번)", sheetPostcode],
 };
@@ -690,44 +690,20 @@ function sheetLaws(b) {
 }
 
 async function sheetAccount(b) {
-  const u = A.auth.user;
   let list = [];
   try { list = await A.listCases(); } catch (e) { console.warn(e); }
+  const title = S.P.address.roadAddress || S.P.address.jibunAddress || "분석";
   b.innerHTML = `
-    ${A.auth.enabled ? (u ? `<p>✅ <b>${esc(u.email)}</b> 로 로그인됨 — 계정은 외부 서버(Supabase)에 저장되고, 이 기기에서 다음에 열 때 <b>자동으로 연결</b>됩니다.</p><button class="btn btn-ghost" id="outBtn">로그아웃</button>` : `
-      <form class="form" id="loginForm">
-        <label class="full">이메일<input type="email" name="email" autocomplete="email" required></label>
-        <label class="full">비밀번호<input type="password" name="pw" autocomplete="current-password" minlength="6"></label>
-        <div class="full" style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-main" data-a="in">로그인</button><button class="btn btn-navy" data-a="up" type="button">회원가입</button><button class="btn btn-ghost" data-a="link" type="button">메일 링크로 로그인</button>
-        </div>
-      </form>
-      <div class="note">로그인 정보는 외부 인증 서버에 저장되며 이 기기에는 자동 재연결용 토큰만 남습니다. 정부24·세움터 비밀번호는 저장하지 않습니다.</div>`)
-      : `<div class="note o">로그인 서버(Supabase)가 아직 연결되지 않았습니다. 관리자가 Vercel 환경변수 <b>SUPABASE_URL</b>, <b>SUPABASE_ANON_KEY</b>를 넣으면 계정 로그인·자동 연결이 켜집니다. 지금은 기록이 <b>이 기기</b>에 저장됩니다.</div>`}
-    <h4>현재 분석 저장</h4>
-    <button class="btn btn-main" id="saveBtn">💾 저장 (${A.auth.enabled && u ? "서버" : "이 기기"})</button>
-    <h4>내 기록 (${list.length})</h4>
-    <div>${list.map((c, i) => `<div class="law" style="display:flex;gap:8px;align-items:center"><div style="flex:1"><b>${esc(c.title)}</b><div>${new Date(c.created_at).toLocaleString("ko-KR")} · ${c.where === "server" ? "서버" : "이 기기"}</div></div><button class="chip" data-load="${i}">열기</button><button class="chip" data-delc="${i}">삭제</button></div>`).join("") || "<p>아직 없습니다.</p>"}</div>`;
+    <p style="font-size:13.5px">로그인 없이 쓰는 앱입니다. 분석 결과는 <b>이 기기(브라우저)</b>에 저장되고, 다른 사람이나 서버로 보내지지 않습니다.</p>
+    <button class="btn btn-main" id="saveBtn">💾 지금 분석 저장</button>
+    <h4>저장한 기록 (${list.length})</h4>
+    <div>${list.map((c, i) => `<div class="law" style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.title)}</b><div>${new Date(c.created_at).toLocaleString("ko-KR")}</div></div><button class="chip" data-load="${i}">열기</button><button class="chip" data-delc="${i}">삭제</button></div>`).join("") || "<p>아직 없습니다.</p>"}</div>
+    <div class="note">브라우저 데이터를 지우면 기록도 지워집니다. 최근 50건까지 보관합니다.</div>`;
   $("#saveBtn").onclick = async () => {
-    try { const w = await A.saveCase(S.P.address.jibunAddress || S.P.address.roadAddress || "분석", S.P); toast(w === "server" ? "서버에 저장했습니다" : "이 기기에 저장했습니다"); sheetAccount(b); } catch (e) { toast("저장 실패: " + e.message); }
+    try { await A.saveCase(title, S.P); toast("이 기기에 저장했습니다"); sheetAccount(b); } catch (e) { toast("저장 실패: " + e.message); }
   };
-  $$("[data-load]", b).forEach((x) => (x.onclick = () => { S.P = structuredClone(list[+x.dataset.load].payload); render(); back(); }));
+  $$("[data-load]", b).forEach((x) => (x.onclick = () => { S.P = structuredClone(list[+x.dataset.load].payload); render(); back(); mapV?.fit(); view?.update(S.P, S.R, S.mode); view?.fit(); }));
   $$("[data-delc]", b).forEach((x) => (x.onclick = async () => { await A.deleteCase(list[+x.dataset.delc]); sheetAccount(b); }));
-  $("#outBtn") && ($("#outBtn").onclick = async () => { await A.signOut(); sheetAccount(b); });
-  const lf = $("#loginForm");
-  if (lf) {
-    lf.onclick = async (e) => {
-      const a = e.target.dataset.a; if (!a) return;
-      e.preventDefault();
-      const email = lf.email.value.trim(), pw = lf.pw.value;
-      try {
-        if (a === "in") await A.signIn(email, pw);
-        if (a === "up") { await A.signUp(email, pw); toast("가입 확인 메일을 보냈습니다"); }
-        if (a === "link") { await A.magicLink(email); toast("로그인 링크를 메일로 보냈습니다"); }
-        sheetAccount(b);
-      } catch (err) { toast("실패: " + (err.message || err)); }
-    };
-  }
 }
 
 let deferredPrompt = null;
@@ -1069,10 +1045,7 @@ async function init() {
   const q = new URLSearchParams(location.search).get("q");
   if (q) { $("#q").value = q; lookup({ q }); }
   if (SHEETS[startSheet] && startSheet !== "postcode") openSheet(startSheet);
-  A.initAuth(S.cfg).then(() => {
-    const upd = () => ($("#accountBtn").textContent = A.auth.user ? "👤 " + (A.auth.user.email || "").split("@")[0] : "👤 로그인");
-    upd(); A.auth.onChange(() => { upd(); renderTiles(); });
-  });
+  // 로그인 없이 사용 — 외부 로그인 서버는 불러오지 않는다 (기록은 이 기기에만 저장)
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
 }
 
