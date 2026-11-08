@@ -51,13 +51,20 @@ function render() {
   // 헤드라인
   const hl = $("#headline");
   hl.className = "headline " + (R.possible === "yes" || R.possible === "none" ? "ok" : R.possible === "no" ? "bad" : "");
-  hl.querySelector(".t").textContent = R.headline;
+  const unknown = !!P.violationsUnknown;
+  if (unknown) hl.className = "headline";
+  hl.querySelector(".t").textContent = unknown ? "대장 조회 완료 — 위반 여부를 확인하세요 (대장 첨부 또는 현황 입력)" : R.headline;
   hl.querySelector(".a").textContent = `${R.zone || "용도지역 미확인"} · ${CATEGORY_LABEL[R.cat] || ""} · 대지 ${f1(R.site)}㎡ · 특조법 신고기간 ${SPECIAL_ACT.effective} ~ ${SPECIAL_ACT.expires}`;
 
   // ① 위반 여부
   const V = R.violation;
-  $("#e1").innerHTML = V.isViolation
-    ? `<div class="big" style="color:var(--bad)">위반건축물</div>
+  const ex = P.isExample ? ` <span class="badge b-warn">예시</span>` : "";
+  $("#e1").innerHTML = unknown
+    ? `<div class="big" style="color:var(--warn)">확인 필요</div>
+       <div class="sub hide-m">건축HUB 대장 정보에는 '위반건축물' 표기가 없어 자동 판정할 수 없습니다.</div>
+       <div class="chips"><span class="chip" role="button" data-act="upload">📎 대장 첨부</span><span class="chip" role="button" data-act="viol-edit">✏️ 현황 입력</span><span class="chip" role="button" data-act="example">예시로 보기</span></div>`
+    : V.isViolation
+    ? `<div class="big" style="color:var(--bad)">위반건축물${ex}</div>
        <div class="sub hide-m">${V.sources.map(esc).join(" · ")}</div>
        <ul>${V.items.slice(0, 3).map((i) => `<li>${esc(i.label)}${i.area ? ` <b>${f1(i.area)}㎡</b>` : ""}${i.units ? ` (+${i.units}가구)` : ""}</li>`).join("")}</ul>
        <div class="sub">위반 <b>${f1(V.totalArea)}㎡</b> · ${V.items.length}건<span class="hide-m"> · 이행강제금 1회 약 <b>${won(S.R.money.fineOnce)}</b></span></div>`
@@ -67,6 +74,12 @@ function render() {
   const tMap = { yes: ["대상", "b-ok"], partial: ["규모 초과(감축 시 대상)", "b-warn"], no: ["대상 아님", "b-bad"], none: ["해당 없음", "b-navy"] };
   const pMap = { yes: ["양성화 가능", "b-ok"], conditional: ["조건부 가능", "b-warn"], no: ["불가 / 추인 검토", "b-bad"], none: ["필요 없음", "b-navy"] };
   const fails = R.target.reasons.filter((r) => !r.ok).concat(R.approval.filter((a) => !a.ok).map((a) => ({ text: a.label })));
+  if (unknown) {
+    const pre = R.target.reasons.filter((r) => /용도|이하|주거용/.test(r.text));
+    $("#e2").innerHTML = `<div><span class="badge b-navy">위반 확인 후 판정</span></div>
+      <div class="sub">사전 검토 (용도·규모)</div>
+      <div class="sub">${pre.map((r) => `<div style="color:${r.ok ? "var(--ok)" : "var(--bad)"}">${r.ok ? "✓" : "✕"} ${esc(r.text)}</div>`).join("")}</div>`;
+  } else
   $("#e2").innerHTML = `
     <div>특조법 대상 <span class="badge ${tMap[R.target.status][1]}">${tMap[R.target.status][0]}</span></div>
     <div>양성화 <span class="badge ${pMap[R.possible][1]}">${pMap[R.possible][0]}</span></div>
@@ -173,7 +186,9 @@ function sheetViolation(b) {
   const R = S.R, V = R.violation;
   b.innerHTML = `
     <p><span class="badge ${V.isViolation ? "b-bad" : "b-ok"}">${V.isViolation ? "위반건축물" : "위반사항 없음"}</span> ${V.sources.map(esc).join(" · ")}</p>
-    ${V.note ? `<div class="note o">대장 표기: ${esc(V.note)}</div>` : ""}
+    ${V.note && S.P.legal.violationMarked ? `<div class="note o">대장 표기: ${esc(V.note)}</div>` : ""}
+    ${S.P.isExample ? `<div class="note o">지금 위반 내역은 <b>가상 예시</b>입니다. 실제 판정은 대장 첨부 또는 현황 입력으로 하세요.</div>` : ""}
+    ${S.P.violationsUnknown ? `<div class="note o">건축HUB 대장 정보에는 '위반건축물' 표기 항목이 없습니다. 대장(갑) PDF·사진을 첨부하거나 현장 위반 내역을 입력하면 판정합니다.</div>` : ""}
     <h4>위반 해당사항</h4>
     ${V.items.length ? `<table class="tbl"><tr><th>내용</th><th>위치</th><th>면적</th></tr>
       ${V.items.map((i) => `<tr><td>${esc(i.label)}${i.note ? `<br><small>${esc(i.note)}</small>` : ""}</td><td>${esc(i.floor)}</td><td>${i.area ? f2(i.area) + "㎡" : i.units ? `+${i.units}가구` : "-"}</td></tr>`).join("")}
@@ -204,7 +219,6 @@ function sheetEligibility(b) {
 function sheetCompare(b) {
   const R = S.R;
   b.innerHTML = `
-    <div class="seg o" style="margin-bottom:10px" id="cmpSeg"><button class="on">표</button></div>
     <table class="tbl"><tr><th>항목</th><th>양성화 전<br><small>(대장)</small></th><th>현황<br><small>(위반 포함)</small></th><th>양성화 후<br><small>(권장안)</small></th><th>기준</th></tr>
     ${R.compare.map((c) => `<tr><td>${c.label}</td><td>${f2(c.before)}${c.unit}</td><td style="color:${c.current > c.before ? "var(--bad)" : "inherit"}">${f2(c.current)}${c.unit}</td><td style="color:var(--ok);font-weight:800">${f2(c.after)}${c.unit}</td><td>${esc(c.limit)}</td></tr>`).join("")}</table>
     <h4>위반 부분별 처리</h4>
@@ -389,7 +403,9 @@ function mergeParsed(res) {
   for (const [k, [g, key]] of Object.entries(map)) if (f[k] != null) P[g][key] = f[k];
   if (f.purpose) P.legal.category = categoryOf(f.purpose);
   if (f.violationMarked) { P.legal.violationMarked = true; P.legal.violationText = f.violationText || "위반건축물"; }
+  P.violationsUnknown = false;
   if (res.violations.length) {
+    P.isExample = false;
     P.violations = res.violations.map((v, i) => ({ id: "u" + i + Date.now(), ...v, height: v.type === "roofAdd" ? 2.7 : undefined, units: v.type === "unitSplit" ? 1 : undefined }));
   }
   if (!P.legal.residentialArea || P.legal.residentialArea > P.legal.totArea) P.legal.residentialArea = /주택|주거/.test(P.legal.purpose || "") ? P.legal.totArea : P.legal.residentialArea;
@@ -438,6 +454,7 @@ function sheetRegister(b) {
     let v = t.type === "checkbox" ? t.checked : t.type === "number" ? (t.value === "" ? null : +t.value) : t.value;
     S.P[g][k] = v;
     if (t.name === "legal.purpose") S.P.legal.category = categoryOf(v);
+    if (t.name === "legal.violationMarked") S.P.violationsUnknown = false;
     if (g === "site" && (k === "width" || k === "depth")) S.P.site.dimsManual = true;
     if (S.P.isSample) { S.P.isSample = false; S.P.sources = ["직접 입력"]; }
     render();
@@ -455,16 +472,18 @@ function sheetViolEdit(b) {
           <label>위치(층)<input name="floor" value="${esc(v.floor || "")}"></label>
           <label>면적(㎡)<input type="number" step="0.1" name="area" value="${v.area ?? 0}"></label>
           <label>${v.type === "roofAdd" ? "높이(m)" : v.type === "unitSplit" ? "증가 가구" : v.type === "sideAdd" ? "층수" : "메모"}<input name="${v.type === "roofAdd" ? "height" : v.type === "unitSplit" ? "units" : v.type === "sideAdd" ? "floors" : "note"}" value="${esc(v.type === "roofAdd" ? v.height ?? 2.7 : v.type === "unitSplit" ? v.units ?? 1 : v.type === "sideAdd" ? v.floors ?? 1 : v.note || "")}"></label>
-          <button class="del" data-del="${i}" aria-label="삭제">✕</button>
+          <button class="del" data-del="${i}" aria-label="이 위반 삭제">✕ 삭제</button>
         </div>`).join("")}</div>
-      <button class="btn btn-main" id="addV">＋ 위반 추가</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-main" id="addV">＋ 위반 추가</button>${!(S.P.violations || []).length ? `<button class="btn btn-ghost" id="noV">현장 확인 — 위반 없음</button>` : ""}<button class="btn btn-ghost" data-act="example">예시 위반 넣어보기</button></div>
       <div class="note">유형별 영향: 옥상 증축 → 용적률·높이·일조 / 수평 증축 → 건폐율·용적률 / 발코니·필로티 → 용적률 / 세대분할·용도변경 → 방화·피난·주차 기준 추가 (특조법 제6조①3, 제7조①단서)</div>`;
-    $("#addV").onclick = () => { S.P.violations.push({ id: "n" + Date.now(), type: "roofAdd", floor: "옥상", area: 20, height: 2.7 }); render(); draw(); };
+    $("#addV").onclick = () => { S.P.violationsUnknown = false; S.P.isExample = false; S.P.violations.push({ id: "n" + Date.now(), type: "roofAdd", floor: "옥상", area: 20, height: 2.7 }); render(); draw(); };
+    $("#noV") && ($("#noV").onclick = () => { S.P.violationsUnknown = false; S.P.legal.violationMarked = false; render(); back(); toast("위반 없음으로 확인했습니다"); });
     $$("[data-del]", b).forEach((x) => (x.onclick = () => { S.P.violations.splice(+x.dataset.del, 1); render(); draw(); }));
     $("#vl").oninput = $("#vl").onchange = (e) => {
       const row = e.target.closest(".viol"); if (!row) return;
       const v = S.P.violations[+row.dataset.i];
       const n = e.target.name;
+      S.P.violationsUnknown = false;
       v[n] = ["area", "height", "units", "floors"].includes(n) ? +e.target.value || 0 : e.target.value;
       if (S.P.isSample) { S.P.isSample = false; }
       render();
@@ -644,8 +663,19 @@ function loadPostcode() {
   });
 }
 
+// 예시 위반 넣기 (가상 시뮬레이션 — 실제 대장 표기가 아님)
+function applyExample() {
+  const sp = sampleProject();
+  S.P.violations = structuredClone(sp.violations);
+  S.P.legal.violationMarked = false;
+  S.P.violationsUnknown = false;
+  S.P.isExample = true;
+  S.P.sources = [...new Set([...(S.P.sources || []), "위반내역 예시(가상)"])];
+  render();
+}
+
 // ───────────────────────── 주소 → 서버 조회
-async function lookup(params, { keepLegal = false } = {}) {
+async function lookup(params, { keepLegal = false, example = false } = {}) {
   loading(true, "건축물대장·필지 정보를 불러오는 중…");
   const qs = new URLSearchParams(params).toString();
   try {
@@ -659,6 +689,7 @@ async function lookup(params, { keepLegal = false } = {}) {
       throw new Error(j.error || "조회 실패");
     }
     applyLookup(j, params, keepLegal);
+    if (example && S.P.violationsUnknown) applyExample();
   } catch (e) {
     const q = params.q || params.jibun || "";
     if (/봉천동\s*1527-11/.test(q.replace(/번지/g, "")) || (params.bun === "1527" && params.ji === "11")) {
@@ -686,7 +717,6 @@ function applyLookup(j, params, keepLegal) {
     return;
   }
   const P = keepLegal ? prev : emptyProject();
-  if (!keepLegal && isSampleAddr) { const sp = sampleProject(); P.violations = sp.violations; P.legal.violationMarked = true; P.legal.violationText = "위반 내역은 샘플 예시 — 실제 현황으로 수정하세요"; }
   const a = j.address || {};
   P.address = { ...P.address, ...a, isSeoul: (a.sigunguCd || "").startsWith("11") };
   P.parcelRing = j.parcel?.ring || null;
@@ -734,8 +764,9 @@ function applyLookup(j, params, keepLegal) {
   else if (a.coordApprox) { src.push("위치 근사"); setTimeout(() => toast("지도 위치가 근사치입니다. '🗺️ 지도에서 선택'으로 정확한 건물을 눌러 보정하세요."), 1200); }
   const vwWarn = (j.warnings || []).find((w) => /브이월드/.test(w));
   if (vwWarn) { src.push("브이월드 실패"); setTimeout(() => toast(vwWarn), 1800); }
-  if (isSampleAddr) src.push("위반내역 예시");
   P.sources = [...new Set([...(keepLegal ? (P.sources || []) : []), ...src])];
+  // 건축HUB에는 위반 표기 항목이 없다 → 첨부·입력 전까지 '위반 여부 확인 필요'
+  if (!keepLegal) P.violationsUnknown = !(P.violations || []).length && !P.legal.violationMarked;
   P.isSample = false;
   S.P = P;
   if (!t && !keepLegal) {
@@ -808,7 +839,8 @@ function bind() {
       if (a === "postcode") openSheet("postcode");
       else if (a === "pick") startPick();
       else if (a === "upload") openSheet("upload");
-      else if (a === "sample") { $("#q").value = SAMPLE_ADDRESS; lookup({ q: SAMPLE_ADDRESS }); }
+      else if (a === "sample") { $("#q").value = SAMPLE_ADDRESS; lookup({ q: SAMPLE_ADDRESS }, { example: true }); }
+      else if (a === "example") { applyExample(); if (sheetOpen) back(); }
       else openSheet(a);
     } else if (el.dataset.sheet) {
       if (e.target.closest("#thumbSeg")) return;

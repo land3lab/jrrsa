@@ -219,3 +219,7 @@ main{max-width:1280px;margin:0 auto;padding:14px 16px calc(90px + var(--safe-b))
 @media (max-width:760px){
   .viewer > div{height:44vh;min-height:300px}
 }
+
+/* 카드 안의 작은 버튼 묶음 */
+.ess .chips{flex-wrap:wrap!important;overflow:visible!important;margin:4px 0 0!important;padding:0!important;gap:5px}
+.ess .chip{min-height:30px;padding:4px 9px;font-size:12px}

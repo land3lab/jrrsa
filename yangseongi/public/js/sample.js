@@ -5,6 +5,7 @@ export const SAMPLE_ADDRESS = "관악구 봉천동 1527-11";
 export function sampleProject() {
   return {
     isSample: true,
+    isExample: true,
     address: {
       jibunAddress: "서울특별시 관악구 봉천동 1527-11",
       roadAddress: "",
@@ -27,8 +28,7 @@ export function sampleProject() {
       useAprDay: "1997-06-18",
       residentialArea: 276.0,
       unitExclusiveMax: null,
-      violationMarked: true,
-      violationText: "위반건축물 — 옥탑 무단증축(예시)",
+      violationMarked: false,
     },
     violations: [
       { id: "v1", type: "roofAdd", floor: "옥상(4층)", area: 38.5, height: 2.7, note: "옥상 무단증축 (주거)" },
@@ -43,13 +43,14 @@ export function sampleProject() {
       dandokOrdinanceCap: 165,
     },
     price: { stdPerM2: 750000 },
-    sources: ["샘플(예시 값)"],
+    sources: ["샘플(예시 값) — 대장·위반 모두 가상"],
   };
 }
 
 export function emptyProject() {
   const p = sampleProject();
   p.isSample = false;
+  p.isExample = false;
   p.address = { jibunAddress: "", roadAddress: "", isSeoul: false };
   p.site = { area: 0, zone: "", roadWidth: 4, roadFrontage: 4, northSetback: 1.5 };
   p.legal = { purpose: "", category: "other", archArea: 0, totArea: 0, farArea: 0, floorsAbove: 1, floorsBelow: 0, height: 0, units: 1, violationMarked: false };
