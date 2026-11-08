@@ -205,7 +205,7 @@ module.exports = async (req, res) => {
       return { pnu: pr.pnu, ring: r, jibun: pr.jibun, address: pr.addr, zone };
     })().catch(() => null);
     const hubP = hub(fetchDataGoKr, addr);
-    const [parcel, H] = await Promise.all([parcelP, hubP]);
+    let [parcel, H] = await Promise.all([parcelP, hubP]);
     delete addr._parcel;
 
     const T = H.getBrTitleInfo?.ok ? H.getBrTitleInfo.items : [];
@@ -213,7 +213,6 @@ module.exports = async (req, res) => {
     const F = H.getBrFlrOulnInfo?.ok ? H.getBrFlrOulnInfo.items : [];
     const J = H.getBrJijiguInfo?.ok ? H.getBrJijiguInfo.items : [];
     const E = H.getBrExposPubuseAreaInfo?.ok ? H.getBrExposPubuseAreaInfo.items : [];
-    if (VW && !parcel) warnings.push(`브이월드 필지 조회 실패${vwErrors.length ? ": " + vwErrors.slice(0, 2).join(" / ") : ""}`);
     if (!H.getBrTitleInfo?.ok) warnings.push(`건축물대장 조회 실패: ${H.getBrTitleInfo?.error || "응답 없음"}`);
 
     // 주 건축물(주건축물 + 연면적 최대) 선택
@@ -229,6 +228,28 @@ module.exports = async (req, res) => {
     const unitExclusiveMax = Object.values(unitArea).reduce((m, v) => Math.max(m, v), 0) || null;
     const zones = J.map((j) => j.jijiguCdNm || j.etcJijigu).filter(Boolean);
 
+    // 브이월드 지오코더(주소→좌표)로 정확한 지점을 찾고, 그 점의 필지 경계를 다시 읽는다
+    if (VW && !addr.lat) {
+      const tries = [];
+      if (addr.jibunAddress) tries.push([addr.jibunAddress, "PARCEL"]);
+      if (addr.roadAddress) tries.push([addr.roadAddress, "ROAD"]);
+      for (const [q, type] of tries) {
+        const u = `https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326&format=json&errorformat=json&refine=true&simple=false&type=${type}&key=${VW}${dom()}&address=${encodeURIComponent(q)}`;
+        const g = await getJson(u, 3000).catch(() => null);
+        vwCheck(g, "브이월드 지오코더");
+        const pt = g?.response?.result?.point;
+        if (pt && pt.x) { addr.lat = parseFloat(pt.y); addr.lng = parseFloat(pt.x); addr.coordSrc = "vworld-geocoder"; break; }
+      }
+      if (addr.lat && !parcel) {
+        const f = await vworldFeature("LP_PA_CBND_BUBUN", `POINT(${addr.lng} ${addr.lat})`, VW).catch(() => []);
+        if (f[0]) {
+          const r = ring(f[0]);
+          const z = await vworldFeature("LT_C_UQ111", `POINT(${addr.lng} ${addr.lat})`, VW).catch(() => []);
+          parcel = { pnu: f[0].properties?.pnu, ring: r, jibun: f[0].properties?.jibun, address: f[0].properties?.addr, zone: z[0]?.properties?.uname || null };
+        }
+      }
+    }
+    if (VW && !parcel) warnings.push(`브이월드 필지 조회 실패${vwErrors.length ? ": " + vwErrors.slice(0, 2).join(" / ") : ""}`);
     let lat = addr.lat, lng = addr.lng;
     // 키가 없을 때 좌표: OSM Nominatim (정밀하지 않을 수 있음)
     if (!lat && Date.now() - started < 6500) {

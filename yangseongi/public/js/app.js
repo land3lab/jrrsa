@@ -29,7 +29,11 @@ function compute() {
     const xs = siteLocal.map((p) => p[0]), zs = siteLocal.map((p) => p[1]);
     if (!P.site.dimsManual) { P.site.width = +(Math.max(...xs) - Math.min(...xs)).toFixed(2); P.site.depth = +(Math.max(...zs) - Math.min(...zs)).toFixed(2); }
   } else if (P.address.lat && P.address.lng) origin = { lat: P.address.lat, lng: P.address.lng };
-  else origin = { lat: 37.47915, lng: 126.95255 };
+  else {
+    // 좌표를 못 찾은 경우: 엉뚱한 기본 위치 대신 지금 지도 중심을 쓴다 (위치 미확인 표시)
+    const c = mapV?.map?.getCenter?.();
+    origin = c ? { lat: c.lat, lng: c.lng } : { lat: 37.5665, lng: 126.978 };
+  }
   P.legal.category = P.legal.category && P.legal.category !== "other" ? P.legal.category : categoryOf(P.legal.purpose);
   const R = analyze(P);
   R.origin = origin; R.siteLocal = siteLocal;
@@ -726,7 +730,8 @@ function applyLookup(j, params, keepLegal) {
   if (j.unitExclusiveMax) P.legal.unitExclusiveMax = j.unitExclusiveMax;
   if (j.zone) { P.site.zone = j.zone; src.push(j.parcel?.zone ? "브이월드 용도지역" : "대장 지역지구"); }
   if (j.parcel?.ring) src.push("브이월드 필지경계");
-  if (a.coordApprox) src.push("좌표 추정");
+  if (!a.lat) { src.push("위치 미확인"); setTimeout(() => toast("정확한 위치를 찾지 못했습니다. '🗺️ 지도에서 선택'으로 건물을 눌러 위치를 지정하세요."), 1200); }
+  else if (a.coordApprox) { src.push("위치 근사"); setTimeout(() => toast("지도 위치가 근사치입니다. '🗺️ 지도에서 선택'으로 정확한 건물을 눌러 보정하세요."), 1200); }
   const vwWarn = (j.warnings || []).find((w) => /브이월드/.test(w));
   if (vwWarn) { src.push("브이월드 실패"); setTimeout(() => toast(vwWarn), 1800); }
   if (isSampleAddr) src.push("위반내역 예시");
