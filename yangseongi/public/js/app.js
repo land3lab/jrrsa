@@ -35,7 +35,19 @@ function compute() {
     origin = c ? { lat: c.lat, lng: c.lng } : { lat: 37.5665, lng: 126.978 };
   }
   P.legal.category = P.legal.category && P.legal.category !== "other" ? P.legal.category : categoryOf(P.legal.purpose);
+  // 실제 건물 외곽선(브이월드) → 로컬 좌표, 정북 이격 자동 측정
+  let bld = null;
+  if (P.footprintRing && P.footprintRing.length > 2 && origin) {
+    const pts = P.footprintRing.map(([la, ln]) => toLocal(origin, la, ln));
+    const xs = pts.map((p) => p[0]), zs = pts.map((p) => p[1]);
+    bld = { pts, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
+    if (siteLocal && !P.site.setbackManual) {
+      const siteMinZ = Math.min(...siteLocal.map((p) => p[1]));
+      P.site.northSetback = Math.max(0, Math.round((bld.minZ - siteMinZ) * 10) / 10);
+    }
+  }
   const R = analyze(P);
+  R.bld = bld;
   R.origin = origin; R.siteLocal = siteLocal;
   S.R = R;
   return R;
@@ -165,6 +177,7 @@ function openSheet(id, push = true) {
   def[1](body);
 }
 function closeSheetUI() {
+  if (bigView) { bigView.destroy(); bigView = null; }
   $("#sheet").hidden = true;
   document.body.style.overflow = "";
   sheetOpen = null;
@@ -193,7 +206,7 @@ function sheetViolation(b) {
   const R = S.R, V = R.violation;
   b.innerHTML = `
     <p><span class="badge ${V.isViolation ? "b-bad" : "b-ok"}">${V.isViolation ? "위반건축물" : "위반사항 없음"}</span> ${V.sources.map(esc).join(" · ")}</p>
-    ${V.note && S.P.legal.violationMarked ? `<div class="note o">대장 표기: ${esc(V.note)}</div>` : ""}
+    ${V.note && S.P.legal.violationMarked ? `<div class="note o">대장 표기: ${esc(V.note.slice(0, 120))}</div>` : ""}
     ${S.P.isExample ? `<div class="note o">지금 위반 내역은 <b>가상 예시</b>입니다. 실제 판정은 대장 첨부 또는 현황 입력으로 하세요.</div>` : ""}
     ${S.P.violationsUnknown ? `<div class="note o">건축HUB 대장 정보에는 '위반건축물' 표기 항목이 없습니다. 대장(갑) PDF·사진을 첨부하거나 현장 위반 내역을 입력하면 판정합니다.</div>` : ""}
     <h4>위반 해당사항</h4>
@@ -203,7 +216,7 @@ function sheetViolation(b) {
     <h4>위반이 바꾼 수치</h4>
     <table class="tbl"><tr><th>항목</th><th>대장</th><th>현황</th><th>기준</th></tr>
       ${R.compare.map((c) => `<tr><td>${c.label}</td><td>${f2(c.before)}${c.unit}</td><td>${f2(c.current)}${c.unit}</td><td>${esc(c.limit)}</td></tr>`).join("")}</table>
-    <div class="note">건축물대장(갑) 상단의 <b>'위반건축물'</b> 표기와 변동사항란의 위반 내용을 기준으로 합니다. 대장을 첨부하면 자동으로 읽고, 현장 상태가 다르면 위반 내역을 직접 고칠 수 있습니다.</div>
+    <div class="note">${(S.P.sources || []).some((x) => /^대장 /.test(x)) ? "첨부한 대장의 <b>'위반건축물' 표기 내역</b>에서 읽은 값입니다. 면적·층수 같은 수치는 건축HUB 값을 우선합니다. 현장과 다르면 위반 내역을 고치세요." : "건축물대장(갑) 상단의 <b>'위반건축물'</b> 표기와 변동사항란의 위반 내용을 기준으로 합니다. 대장을 첨부하면 자동으로 읽습니다."}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-main" data-open="viol-edit">✏️ 위반 내역 수정</button><button class="btn btn-ghost" data-open="upload">📎 대장 첨부</button></div>`;
 }
 
@@ -236,30 +249,44 @@ function sheetCompare(b) {
 }
 
 function sheetView3d(b) {
+  const real = !!S.R.bld;
   b.innerHTML = `
-    <div class="seg o" id="bigSeg" style="margin-bottom:8px"><button data-m="before">양성화 전</button><button data-m="current">현황</button><button data-m="after" class="on">양성화 후</button></div>
-    <div style="position:relative;height:min(62vh,520px);border-radius:12px;overflow:hidden" id="bigWrap">
-      <div id="big3d" style="width:100%;height:100%"></div>
-      <div class="v-tools"><button data-bz="+">＋</button><button data-bz="-">－</button><button data-bz="fit">◎</button></div>
+    <div class="big3d-bar">
+      <div class="seg o" id="bigSeg"><button data-m="before">전</button><button data-m="current">현황</button><button data-m="after" class="on">후</button></div>
+      <div class="seg" id="bigViews"><button data-v="iso" class="on">3D</button><button data-v="top">위</button><button data-v="south">남측</button><button data-v="east">동측</button><button data-v="north">북측</button></div>
+    </div>
+    <div class="big3d-wrap" id="bigWrap">
+      <div id="big3d"></div>
+      <div class="v-tools"><button data-bz="+" aria-label="확대">＋</button><button data-bz="-" aria-label="축소">－</button><button data-bz="fit" aria-label="전체 보기">◎</button></div>
       <div class="v-legend"><i style="background:#FFF1D6;border:1px solid #1D2C5E"></i>대장(적법) <i style="background:#F28C38"></i>위반 <i style="background:#2FB67C"></i>존치 <i style="background:#E24A4A;opacity:.5"></i>철거 <i style="background:#4A7BD8;opacity:.5"></i>일조사선</div>
     </div>
-    <p class="sub" style="font-size:12.5px;color:var(--ink-2)">한 손가락 회전 · 두 손가락 확대/이동 (PC: 드래그 회전 · 휠 확대 · 우클릭 이동)</p>
-    <div class="note">파란 반투명 면은 개정 건축법 제61조 정북 일조 한계(1.5m·5m·h/2)입니다. 매스는 대장 면적으로 만든 <b>개략 모델</b>입니다.</div>`;
+    <p style="font-size:12.5px;color:var(--ink-2);margin:8px 0">한 손가락: 회전 · 두 손가락: 확대·이동 · 위 버튼으로 시점 바꾸기</p>
+    <div class="note">${real ? "건물 모양은 <b>브이월드 실제 건물 외곽선</b>, 층수·높이는 건축물대장 값입니다." : "실제 건물 외곽선을 찾지 못해 <b>대장 면적으로 만든 개략 모델</b>입니다 (브이월드 건물 정보가 있는 주소는 실제 모양으로 표시)."}
+    증축·철거 부분은 위치를 단순화한 상자로 표시합니다. 파란 반투명 면은 개정 건축법 제61조 정북 일조 한계(1.5m·5m·h/2)입니다.</div>`;
   S.bigMode = "after";
-  if (bigView) { $("#big3d").appendChild(bigView.dom); }
-  else bigView = createView($("#big3d"));
-  bigView.setAuto(false);
-  bigView.fit();
-  bigView.update(S.P, S.R, "after");
-  setTimeout(() => bigView.resize(), 60);
+  // 화면이 실제로 그려진 다음 크기를 재서 만든다 (배율 어긋남 방지)
+  if (bigView) { bigView.destroy(); bigView = null; }
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (sheetOpen !== "view3d") return;
+    bigView = createView($("#big3d"));
+    bigView.setAuto(false);
+    bigView.resize();
+    bigView.update(S.P, S.R, "after");
+    bigView.view("iso");
+  }));
   $("#bigSeg").onclick = (e) => {
-    const m = e.target.dataset.m; if (!m) return;
+    const m = e.target.dataset.m; if (!m || !bigView) return;
     $$("#bigSeg button").forEach((x) => x.classList.toggle("on", x === e.target));
     S.bigMode = m; bigView.update(S.P, S.R, m);
   };
+  $("#bigViews").onclick = (e) => {
+    const v = e.target.dataset.v; if (!v || !bigView) return;
+    $$("#bigViews button").forEach((x) => x.classList.toggle("on", x === e.target));
+    bigView.view(v);
+  };
   $("#bigWrap .v-tools").onclick = (e) => {
-    const z = e.target.dataset.bz; if (!z) return;
-    if (z === "+") bigView.zoom(0.8); else if (z === "-") bigView.zoom(1.25); else { bigView.fit(); bigView.update(S.P, S.R, S.bigMode); }
+    const z = e.target.dataset.bz; if (!z || !bigView) return;
+    if (z === "+") bigView.zoom(0.75); else if (z === "-") bigView.zoom(1.33); else bigView.fit();
   };
 }
 
@@ -309,7 +336,7 @@ function sheetSun(b) {
     <div class="note">근거: 건축법 제61조① (법률 제21880호, 2026.8.11 공포, 2026.11.12 시행 — 시행 이후 허가·신고 신청분부터 적용, 부칙 제4조), 종전 건축법 시행령 제86조①. 구체 거리는 해당 지자체 건축조례 범위 내 기준.</div>`;
   $("#sunForm").oninput = (e) => {
     const t = e.target;
-    if (t.name === "northSetback") S.P.site.northSetback = +t.value || 0;
+    if (t.name === "northSetback") { S.P.site.northSetback = +t.value || 0; S.P.site.setbackManual = true; }
     if (t.name === "northNotResidential") S.P.site.northNotResidential = t.checked;
     render();
   };
@@ -416,7 +443,8 @@ function showUploadResult(res, where) {
   const div = document.createElement("div");
   div.innerHTML = `
     <div class="found">${res.found.length ? res.found.map((f) => `<span>✓ ${esc(f)}</span>`).join("") : `<span style="background:var(--bad-bg);color:var(--bad)">인식된 항목 없음 — 더 밝고 반듯한 사진으로 다시 시도</span>`}</div>
-    ${res.violations.length ? `<p>위반 내용 ${res.violations.length}건 인식 → 위반 내역에 반영</p>` : ""}
+    ${res.violations.length ? `<p>위반 내용 ${res.violations.length}건 인식 → 위반 내역에 반영: ${res.violations.map((v) => esc(`${v.floor || ""} ${v.area || ""}㎡`)).join(", ")}</p>` : ""}
+    ${res.dropped?.length ? `<p style="font-size:12.5px;color:var(--warn)">표 형식이라 확실하지 않아 버린 값: ${res.dropped.map(esc).join(", ")} → 주소로 건축HUB 값을 채웁니다</p>` : ""}
     <details style="margin-top:8px"><summary style="font-size:12.5px;font-weight:800;cursor:pointer">인식된 원문 보기</summary><div class="ocrtext">${esc(res.text.slice(0, 4000))}</div></details>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-main" data-close>결과 보기</button><button class="btn btn-ghost" data-open="register">값 확인·수정</button></div>`;
   host.appendChild(div);
@@ -787,6 +815,7 @@ function applyLookup(j, params, keepLegal) {
   const a = j.address || {};
   P.address = { ...P.address, ...a, isSeoul: (a.sigunguCd || "").startsWith("11") };
   P.parcelRing = j.parcel?.ring || null;
+  P.footprintRing = j.footprint?.ring || null;
   const t = j.building;
   const src = [];
   const fromUpload = keepLegal && (P.sources || []).some((x) => /^대장 /.test(x));
@@ -818,9 +847,17 @@ function applyLookup(j, params, keepLegal) {
     src.push("건축HUB 대장");
   }
   if (fromUpload) {
-    // 첨부한 대장 값 우선, 비어 있던 항목만 건축HUB 값으로 채움
-    for (const [k, v] of Object.entries(before)) if (v != null && v !== "" && v !== 0) P.legal[k] = v;
-    if (siteBefore) P.site.area = siteBefore;
+    // 수치는 건축HUB(국토부 구조화 자료)가 정확 → 건축HUB 값 우선, 비어 있는 항목만 첨부 대장 값으로 채움
+    if (t) {
+      for (const [k, v] of Object.entries(before)) if ((P.legal[k] == null || P.legal[k] === "" || P.legal[k] === 0) && v != null) P.legal[k] = v;
+      P.legal.violationMarked = before.violationMarked || P.legal.violationMarked;
+      P.legal.violationText = before.violationText || P.legal.violationText;
+      if (!P.site.area && siteBefore) P.site.area = siteBefore;
+      src.push("수치=건축HUB · 위반=첨부 대장");
+    } else {
+      Object.assign(P.legal, before);
+      if (siteBefore) P.site.area = siteBefore;
+    }
   }
   if (j.recap && !P.site.area) P.site.area = parseFloat(j.recap.platArea) || P.site.area;
   const floors = j.floors || [];
@@ -835,6 +872,7 @@ function applyLookup(j, params, keepLegal) {
   if (j.unitExclusiveMax) P.legal.unitExclusiveMax = j.unitExclusiveMax;
   if (j.zone) { P.site.zone = j.zone; src.push(j.parcel?.zone ? "브이월드 용도지역" : "대장 지역지구"); }
   if (j.parcel?.ring) src.push("브이월드 필지경계");
+  if (j.footprint?.ring) src.push("실제 건물 외곽선");
   if (!a.lat) { src.push("위치 미확인"); setTimeout(() => toast("정확한 위치를 찾지 못했습니다. '🗺️ 지도에서 선택'으로 건물을 눌러 위치를 지정하세요."), 1200); }
   else if (a.coordApprox) { src.push("위치 근사"); setTimeout(() => toast("지도 위치가 근사치입니다. '🗺️ 지도에서 선택'으로 정확한 건물을 눌러 보정하세요."), 1200); }
   const vwWarn = (j.warnings || []).find((w) => /브이월드/.test(w));

@@ -256,3 +256,13 @@ main{max-width:1280px;margin:0 auto;padding:14px 16px calc(90px + var(--safe-b))
 .lim-b{color:var(--ink-3);font-size:11px}
 .reg-btn{padding:0 12px;white-space:nowrap}
 @media (max-width:560px){.reg-btn span{display:none}.reg-btn{font-size:20px;padding:0 12px}}
+
+/* 3D 크게 보기 */
+.big3d-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.big3d-wrap{position:relative;height:min(64vh,620px);min-height:340px;border-radius:12px;overflow:hidden;background:linear-gradient(#DCE5FB,#F6F8FF);touch-action:none}
+#big3d{position:absolute;inset:0}
+#big3d canvas{display:block;width:100%!important;height:100%!important;touch-action:none}
+@media (max-width:760px){
+  .sheet-box:has(#big3d){max-height:96vh}
+  .big3d-wrap{height:62vh}
+}

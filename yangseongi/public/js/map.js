@@ -54,7 +54,7 @@ export function createMap(el, { onPick, vworldKey } = {}) {
   function poly(origin, pts, style) {
     return L.polygon(pts.map(([x, z]) => toLatLng(origin, x, z)), style);
   }
-  function rect(origin, x1, z1, x2, z2, style) {
+  function rectB(origin, x1, z1, x2, z2, style) {
     return poly(origin, [[x1, z1], [x2, z1], [x2, z2], [x1, z2]], style);
   }
 
@@ -62,9 +62,11 @@ export function createMap(el, { onPick, vworldKey } = {}) {
     g.clearLayers();
     const origin = R.origin;
     if (!origin) return;
-    const { W, D, bw, bd, s } = R.L;
+    let { W, D, bw, bd, s } = R.L;
     const north = -D / 2;
-    const bz0 = north + s;
+    let bz0 = north + s, bx = 0;
+    if (R.bld) { bw = R.bld.maxX - R.bld.minX; bd = R.bld.maxZ - R.bld.minZ; bx = (R.bld.minX + R.bld.maxX) / 2; bz0 = R.bld.minZ; }
+    const rectB = (o, x1, z1, x2, z2, st) => rect(o, x1 + bx, z1, x2 + bx, z2, st);
 
     // 필지
     const sitePts = R.siteLocal && R.siteLocal.length > 2 ? R.siteLocal : [[-W / 2, -D / 2], [W / 2, -D / 2], [W / 2, D / 2], [-W / 2, D / 2]];
@@ -83,7 +85,8 @@ export function createMap(el, { onPick, vworldKey } = {}) {
     }
 
     // 건물(대장)
-    const b = rect(origin, -bw / 2, bz0, bw / 2, bz0 + bd, { color: "#1D2C5E", weight: 2, fillColor: "#FFF1D6", fillOpacity: 0.95 });
+    const bStyle = { color: "#1D2C5E", weight: 2, fillColor: "#FFF1D6", fillOpacity: 0.95 };
+    const b = R.bld ? poly(origin, R.bld.pts, bStyle) : rectB(origin, -bw / 2, bz0, bw / 2, bz0 + bd, bStyle);
     b.bindTooltip(`대장 건축면적 ${R.before.arch}㎡ · ${R.before.floors}층`, { className: "lbl", direction: "center" });
     g.addLayer(b);
 
@@ -101,20 +104,20 @@ export function createMap(el, { onPick, vworldKey } = {}) {
           if (mode === "after") {
             const back = R.sun.applies ? Math.max(0, SUNLIGHT.requiredNew(R.before.height + (Number(v.height) || 2.7)) - s) : 0;
             const dK = keep / wAll, dC = cut / wAll;
-            if (dK > 0.01) g.addLayer(rect(origin, -wAll / 2, bz0 + back, wAll / 2, bz0 + back + dK, keptStyle).bindTooltip(`옥상 존치 ${keep.toFixed(1)}㎡`, { className: "lbl" }));
-            if (dC > 0.01) g.addLayer(rect(origin, -wAll / 2, bz0, wAll / 2, bz0 + dC, cutStyle).bindTooltip(`옥상 철거 ${cut.toFixed(1)}㎡`, { className: "lbl", permanent: true, direction: "top" }));
+            if (dK > 0.01) g.addLayer(rectB(origin, -wAll / 2, bz0 + back, wAll / 2, bz0 + back + dK, keptStyle).bindTooltip(`옥상 존치 ${keep.toFixed(1)}㎡`, { className: "lbl" }));
+            if (dC > 0.01) g.addLayer(rectB(origin, -wAll / 2, bz0, wAll / 2, bz0 + dC, cutStyle).bindTooltip(`옥상 철거 ${cut.toFixed(1)}㎡`, { className: "lbl", permanent: true, direction: "top" }));
           } else {
-            g.addLayer(rect(origin, -wAll / 2, bz0, wAll / 2, bz0 + dAll, keptStyle).bindTooltip(`옥상 무단증축 ${orig}㎡`, { className: "lbl", permanent: true, direction: "top" }));
+            g.addLayer(rectB(origin, -wAll / 2, bz0, wAll / 2, bz0 + dAll, keptStyle).bindTooltip(`옥상 무단증축 ${orig}㎡`, { className: "lbl", permanent: true, direction: "top" }));
           }
-        } else if (v.type === "sideAdd" || v.type === "annex") {
+        } else if (v.type === "sideAdd" || v.type === "annex" || v.type === "floorAdd") {
           const depth = Math.min(bd, Math.max(2, Math.sqrt(orig)));
           const wK = keep / depth, wC = cut / depth;
           const z2 = bz0 + bd, z1 = z2 - depth;
-          if (wK > 0.01) g.addLayer(rect(origin, bw / 2, z1, bw / 2 + wK, z2, keptStyle).bindTooltip(`수평증축 ${mode === "after" ? "존치 " + keep.toFixed(1) : orig}㎡`, { className: "lbl", permanent: mode !== "after" }));
-          if (mode === "after" && wC > 0.01) g.addLayer(rect(origin, bw / 2 + wK, z1, bw / 2 + wK + wC, z2, cutStyle).bindTooltip(`철거 ${cut.toFixed(1)}㎡`, { className: "lbl", permanent: true }));
+          if (wK > 0.01) g.addLayer(rectB(origin, bw / 2, z1, bw / 2 + wK, z2, keptStyle).bindTooltip(`수평증축 ${mode === "after" ? "존치 " + keep.toFixed(1) : orig}㎡`, { className: "lbl", permanent: mode !== "after" }));
+          if (mode === "after" && wC > 0.01) g.addLayer(rectB(origin, bw / 2 + wK, z1, bw / 2 + wK + wC, z2, cutStyle).bindTooltip(`철거 ${cut.toFixed(1)}㎡`, { className: "lbl", permanent: true }));
         } else if (v.type === "balcony") {
           const depth = 1.3, w = Math.min(bw, orig / depth);
-          g.addLayer(rect(origin, -w / 2, bz0 + bd, w / 2, bz0 + bd + depth, keep > 0 ? keptStyle : cutStyle).bindTooltip(`발코니 확장 ${orig}㎡`, { className: "lbl" }));
+          g.addLayer(rectB(origin, -w / 2, bz0 + bd, w / 2, bz0 + bd + depth, keep > 0 ? keptStyle : cutStyle).bindTooltip(`발코니 확장 ${orig}㎡`, { className: "lbl" }));
         }
       }
     }

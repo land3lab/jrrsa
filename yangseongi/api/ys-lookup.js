@@ -249,6 +249,33 @@ module.exports = async (req, res) => {
         }
       }
     }
+    // 실제 건물 외곽선 (브이월드 도로명주소 건물 LT_C_SPBD) — 필지 안에 중심이 있는 건물 중 가장 큰 것
+    let footprint = null;
+    if (VW && parcel?.ring?.length > 2) {
+      const lats = parcel.ring.map((p) => p[0]), lngs = parcel.ring.map((p) => p[1]);
+      const pad = 0.00003;
+      const box = `BOX(${Math.min(...lngs) - pad},${Math.min(...lats) - pad},${Math.max(...lngs) + pad},${Math.max(...lats) + pad})`;
+      const bf = await vworldFeature("LT_C_SPBD", box, VW).catch(() => []);
+      const inside = (pt, poly) => {
+        let c = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const [yi, xi] = poly[i], [yj, xj] = poly[j];
+          if ((yi > pt[0]) !== (yj > pt[0]) && pt[1] < ((xj - xi) * (pt[0] - yi)) / (yj - yi) + xi) c = !c;
+        }
+        return c;
+      };
+      const area = (r) => Math.abs(r.reduce((s2, p, i) => { const q = r[(i + 1) % r.length]; return s2 + p[1] * q[0] - q[1] * p[0]; }, 0) / 2);
+      let best = null;
+      for (const f of bf) {
+        const r = ring(f);
+        if (!r || r.length < 3) continue;
+        const c = [r.reduce((s2, p) => s2 + p[0], 0) / r.length, r.reduce((s2, p) => s2 + p[1], 0) / r.length];
+        if (!inside(c, parcel.ring)) continue;
+        const a2 = area(r);
+        if (!best || a2 > best.a) best = { a: a2, r, pr: f.properties || {} };
+      }
+      if (best) footprint = { ring: best.r, floors: parseInt(best.pr.gro_flo_co, 10) || null, below: parseInt(best.pr.und_flo_co, 10) || null, name: best.pr.buld_nm || best.pr.bld_nm || "" };
+    }
     if (VW && !parcel) warnings.push(`브이월드 필지 조회 실패${vwErrors.length ? ": " + vwErrors.slice(0, 2).join(" / ") : ""}`);
     let lat = addr.lat, lng = addr.lng;
     // 키가 없을 때 좌표: OSM Nominatim (정밀하지 않을 수 있음)
@@ -265,6 +292,7 @@ module.exports = async (req, res) => {
       address: { ...addr, lat, lng },
       candidates: candidates.slice(0, 5).map((c) => ({ roadAddress: c.roadAddress, jibunAddress: c.jibunAddress })),
       parcel,
+      footprint,
       zone: (parcel && parcel.zone) || zones.find((z) => /지역$/.test(z)) || null,
       zones,
       building: main,

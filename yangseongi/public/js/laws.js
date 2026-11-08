@@ -131,6 +131,7 @@ export const FINE = {
 
 export const VIOLATION_TYPES = {
   roofAdd: { label: "옥상·최상층 무단증축", fineKey: "noPermit", affects: ["far", "height", "sun"], residential: true },
+  floorAdd: { label: "층 일부 무단증축 (해당 층 면적 증가)", fineKey: "noPermit", affects: ["far"], residential: true },
   sideAdd: { label: "수평 무단증축 (건폐율 증가)", fineKey: "bcr", affects: ["bcr", "far"], residential: true },
   balcony: { label: "발코니·베란다 무단 확장/새시 증축", fineKey: "noReport", affects: ["far"], residential: true },
   piloti: { label: "필로티·주차장 무단 실내화", fineKey: "far", affects: ["far", "parking"], residential: true },

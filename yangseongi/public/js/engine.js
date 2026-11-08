@@ -88,7 +88,7 @@ export function analyze(P) {
       addFloors = Math.max(addFloors, 1);
     } else if (v.type === "sideAdd" || v.type === "annex") {
       addArch += a; addTot += a * Math.max(1, num(v.floors, 1)); addFar += a * Math.max(1, num(v.floors, 1));
-    } else if (v.type === "balcony" || v.type === "piloti") {
+    } else if (v.type === "balcony" || v.type === "piloti" || v.type === "floorAdd") {
       addTot += a; addFar += a;
     }
     if (v.type === "unitSplit") addUnits += Math.max(1, num(v.units, 1));
@@ -319,7 +319,7 @@ export function analyze(P) {
   // ── 양성화 후 (추천 트랙 적용, 감축은 옥상증축 → 수평증축 → 기타 순으로 배분)
   let toCut = rec.cut;
   const kept = V.map((v) => ({ ...v, keepArea: num(v.area, 0) }));
-  const order = ["roofAdd", "annex", "sideAdd", "balcony", "piloti"];
+  const order = ["roofAdd", "annex", "floorAdd", "sideAdd", "balcony", "piloti"];
   for (const t of order) {
     for (const k of kept) {
       if (toCut <= 0) break;
@@ -333,7 +333,7 @@ export function analyze(P) {
   for (const k of kept) {
     if (k.type === "roofAdd" && k.keepArea > 0) { aTot += k.keepArea; aFar += k.keepArea; aH = Math.max(aH, before.height + num(k.height, ROOF_ADD_H)); aFloors = before.floors + 1; }
     if ((k.type === "sideAdd" || k.type === "annex") && k.keepArea > 0) { aArch += k.keepArea; aTot += k.keepArea * Math.max(1, num(k.floors, 1)); aFar += k.keepArea * Math.max(1, num(k.floors, 1)); }
-    if ((k.type === "balcony" || k.type === "piloti") && k.keepArea > 0) { aTot += k.keepArea; aFar += k.keepArea; }
+    if ((k.type === "balcony" || k.type === "piloti" || k.type === "floorAdd") && k.keepArea > 0) { aTot += k.keepArea; aFar += k.keepArea; }
   }
   const after = { arch: aArch, tot: aTot, farArea: aFar, height: aH, floors: aFloors, units: cur.units, bcr: pct(aArch), far: pct(aFar), kept };
 
