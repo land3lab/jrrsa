@@ -254,3 +254,5 @@ main{max-width:1280px;margin:0 auto;padding:14px 16px calc(90px + var(--safe-b))
 .bar{height:7px;background:var(--bad-bg);border-radius:6px;overflow:hidden;margin:6px 0 4px}
 .bar i{display:block;height:100%;background:var(--ok)}
 .lim-b{color:var(--ink-3);font-size:11px}
+.reg-btn{padding:0 12px;white-space:nowrap}
+@media (max-width:560px){.reg-btn span{display:none}.reg-btn{font-size:20px;padding:0 12px}}

@@ -86,8 +86,9 @@ export function parseRegister(raw) {
   // 위반건축물 표기
   if (/위\s*반\s*건\s*축\s*물/.test(flat)) {
     set("violationMarked", true, "위반건축물 표기");
-    const vm = flat.match(/위\s*반[^.\n]{0,120}/g) || [];
-    out.fields.violationText = vm.slice(0, 4).join(" / ").slice(0, 400);
+    // 변동사항란의 위반 문구만 (대지위치 등 다음 칸 글자가 섞이지 않게 짧게)
+    const vm = (flat.match(/위\s*반[^.\n]{0,60}/g) || []).map((t) => t.split(/대\s*지\s*위\s*치|도\s*로\s*명|대\s*지\s*면\s*적/)[0].trim());
+    out.fields.violationText = [...new Set(vm)].slice(0, 3).join(" / ").slice(0, 200);
   }
   // 변동사항의 위반 내용: "무단증축 30.5㎡", "옥탑 무단 증축", "무단용도변경", "세대분할" 등
   const vRe = /(옥탑|옥상|[0-9]{1,2}\s*층)?\s*(무단\s*(?:증축|신축|대수선|용도\s*변경)|불법\s*(?:증축|용도변경)|세대\s*분할|가구\s*분할|발코니\s*확장|베란다|필로티)[^0-9]{0,25}(?:([0-9]+(?:\.[0-9]+)?)\s*㎡)?/g;

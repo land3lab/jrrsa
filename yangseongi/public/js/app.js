@@ -52,14 +52,21 @@ function render() {
   const hl = $("#headline");
   hl.className = "headline " + (R.possible === "yes" || R.possible === "none" ? "ok" : R.possible === "no" ? "bad" : "");
   const unknown = !!P.violationsUnknown;
+  const markedNoDetail = !unknown && P.legal.violationMarked && !(P.violations || []).length;
   if (unknown) hl.className = "headline";
-  hl.querySelector(".t").textContent = unknown ? "대장 조회 완료 — 위반 여부를 확인하세요 (대장 첨부 또는 현황 입력)" : R.headline;
+  if (markedNoDetail) hl.className = "headline bad";
+  hl.querySelector(".t").textContent = unknown ? "대장 조회 완료 — 위반 여부를 확인하세요 (대장 첨부 또는 현황 입력)"
+    : markedNoDetail ? "대장에 '위반건축물' 표기 — 위반 내용(위치·면적)을 입력하면 양성화 가능 여부를 계산합니다" : R.headline;
   hl.querySelector(".a").textContent = `${R.zone || "용도지역 미확인"} · ${CATEGORY_LABEL[R.cat] || ""} · 대지 ${f1(R.site)}㎡ · 특조법 신고기간 ${SPECIAL_ACT.effective} ~ ${SPECIAL_ACT.expires}`;
 
   // ① 위반 여부
   const V = R.violation;
   const ex = P.isExample ? ` <span class="badge b-warn">예시</span>` : "";
-  $("#e1").innerHTML = unknown
+  $("#e1").innerHTML = markedNoDetail
+    ? `<div class="big" style="color:var(--bad)">위반건축물</div>
+       <div class="sub">건축물대장에 '위반건축물' 표기가 있습니다. 위반 위치·면적을 넣으면 계산합니다.</div>
+       <div class="chips"><span class="chip" role="button" data-act="viol-edit">✏️ 위반 내용 입력</span></div>`
+    : unknown
     ? `<div class="big" style="color:var(--warn)">확인 필요</div>
        <div class="sub hide-m">건축HUB 대장 정보에는 '위반건축물' 표기가 없어 자동 판정할 수 없습니다.</div>
        <div class="chips"><span class="chip" role="button" data-act="upload">📎 대장 첨부</span><span class="chip" role="button" data-act="viol-edit">✏️ 현황 입력</span><span class="chip" role="button" data-act="example">예시로 보기</span></div>`
@@ -74,9 +81,9 @@ function render() {
   const tMap = { yes: ["대상", "b-ok"], partial: ["규모 초과(감축 시 대상)", "b-warn"], no: ["대상 아님", "b-bad"], none: ["해당 없음", "b-navy"] };
   const pMap = { yes: ["양성화 가능", "b-ok"], conditional: ["조건부 가능", "b-warn"], no: ["불가 / 추인 검토", "b-bad"], none: ["필요 없음", "b-navy"] };
   const fails = R.target.reasons.filter((r) => !r.ok).concat(R.approval.filter((a) => !a.ok).map((a) => ({ text: a.label })));
-  if (unknown) {
+  if (unknown || markedNoDetail) {
     const pre = R.target.reasons.filter((r) => /용도|이하|주거용/.test(r.text));
-    $("#e2").innerHTML = `<div><span class="badge b-navy">위반 확인 후 판정</span></div>
+    $("#e2").innerHTML = `<div><span class="badge b-navy">${markedNoDetail ? "위반 내용 입력 후 판정" : "위반 확인 후 판정"}</span></div>
       <div class="sub">사전 검토 (용도·규모)</div>
       <div class="sub">${pre.map((r) => `<div style="color:${r.ok ? "var(--ok)" : "var(--bad)"}">${r.ok ? "✓" : "✕"} ${esc(r.text)}</div>`).join("")}</div>`;
   } else
@@ -370,6 +377,8 @@ async function handleFiles(files) {
   if (!files || !files.length) return;
   if (sheetOpen !== "upload") openSheet("upload");
   const st = $("#upStatus");
+  S.freshBatch = true; // 이번에 넣은 대장 기준으로 새로 분석 (이전 주소 값이 섞이지 않게)
+  let okCount = 0, foundTotal = 0;
   for (const file of files) {
     const row = document.createElement("div");
     row.innerHTML = `<p><b>${esc(file.name)}</b> <span class="lbltxt">읽는 중…</span></p><div class="prog"><i></i></div>`;
@@ -383,12 +392,21 @@ async function handleFiles(files) {
       bar.style.width = "100%";
       lt.textContent = `${res.method} 완료`;
       S.lastUpload = res;
-      mergeParsed(res);
       showUploadResult(res, row);
+      if (res.found.length) { okCount++; foundTotal += res.found.length; await mergeParsed(res); }
     } catch (e) {
       lt.textContent = "실패: " + (e?.message || e);
       lt.style.color = "var(--bad)";
     }
+  }
+  S.freshBatch = false;
+  if (okCount) {
+    // 인식이 되면 바로 결과 화면으로 — 대장만 넣어도 분석 끝
+    setTimeout(() => {
+      if (sheetOpen === "upload") back();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      toast(`대장 분석 완료 — ${foundTotal}개 항목 인식`);
+    }, 900);
   }
 }
 
@@ -404,8 +422,23 @@ function showUploadResult(res, where) {
   host.appendChild(div);
 }
 
-function mergeParsed(res) {
-  const P = S.P, f = res.fields;
+async function mergeParsed(res) {
+  const f = res.fields;
+  if (S.freshBatch) {
+    const addr0 = f.jibunAddress || f.roadAddress || "";
+    const tail0 = addr0.trim().split(/\s+/).pop();
+    const same = addr0 && `${S.P.address.jibunAddress} ${S.P.address.roadAddress}`.includes(tail0);
+    if (S.P.isSample || S.P.isExample || !same) {
+      const keep = same && !S.P.isSample && !S.P.isExample; // 샘플 값은 버리고 실제 조회
+      const keepAddr = keep ? S.P.address : null;
+      const keepRing = keep ? S.P.parcelRing : null;
+      S.P = emptyProject();
+      if (keepAddr) { S.P.address = keepAddr; S.P.parcelRing = keepRing; }
+      S.floors = [];
+    }
+    S.freshBatch = false;
+  }
+  const P = S.P;
   if (P.isSample) { P.isSample = false; }
   const map = { siteArea: ["site", "area"], zone: ["site", "zone"], archArea: ["legal", "archArea"], totArea: ["legal", "totArea"], farArea: ["legal", "farArea"], height: ["legal", "height"], floorsAbove: ["legal", "floorsAbove"], floorsBelow: ["legal", "floorsBelow"], units: ["legal", "units"], purpose: ["legal", "purpose"], structure: ["legal", "structure"], useAprDay: ["legal", "useAprDay"] };
   for (const [k, [g, key]] of Object.entries(map)) if (f[k] != null) P[g][key] = f[k];
@@ -423,7 +456,11 @@ function mergeParsed(res) {
   const tail = (addr || "").trim().split(/\s+/).pop();
   if (addr && (!P.address.sigunguCd || !`${P.address.jibunAddress} ${P.address.roadAddress}`.includes(tail))) {
     $("#q").value = addr;
-    lookup({ q: addr }, { keepLegal: true });
+    if (!P.address.jibunAddress) P.address.jibunAddress = f.jibunAddress || "";
+    if (!P.address.roadAddress) P.address.roadAddress = f.roadAddress || "";
+    await lookup({ q: addr }, { keepLegal: true });
+  } else if (!addr && !P.address.sigunguCd) {
+    toast("대장에서 주소를 읽지 못했습니다. 주소를 입력하면 지도·필지도 함께 분석합니다.");
   }
 }
 
@@ -722,7 +759,7 @@ async function lookup(params, { keepLegal = false, example = false } = {}) {
     if (example && S.P.violationsUnknown) applyExample();
   } catch (e) {
     const q = params.q || params.jibun || "";
-    if (/봉천동\s*1527-11/.test(q.replace(/번지/g, "")) || (params.bun === "1527" && params.ji === "11")) {
+    if (!keepLegal && (/봉천동\s*1527-11/.test(q.replace(/번지/g, "")) || (params.bun === "1527" && params.ji === "11"))) {
       S.P = sampleProject();
       S.P.sources = ["샘플(예시 값) — 서버 조회 실패: " + (e.message || e)];
       render();
@@ -752,6 +789,9 @@ function applyLookup(j, params, keepLegal) {
   P.parcelRing = j.parcel?.ring || null;
   const t = j.building;
   const src = [];
+  const fromUpload = keepLegal && (P.sources || []).some((x) => /^대장 /.test(x));
+  const before = fromUpload ? JSON.parse(JSON.stringify(P.legal)) : null;
+  const siteBefore = fromUpload ? P.site.area : null;
   if (t) {
     const n = (v) => (v == null || v === "" ? null : parseFloat(v));
     if (n(t.platArea)) P.site.area = n(t.platArea);
@@ -776,6 +816,11 @@ function applyLookup(j, params, keepLegal) {
     if (t.useAprDay && /^\d{8}$/.test(t.useAprDay)) P.legal.useAprDay = `${t.useAprDay.slice(0, 4)}-${t.useAprDay.slice(4, 6)}-${t.useAprDay.slice(6, 8)}`;
     P.legal.category = categoryOf(P.legal.purpose);
     src.push("건축HUB 대장");
+  }
+  if (fromUpload) {
+    // 첨부한 대장 값 우선, 비어 있던 항목만 건축HUB 값으로 채움
+    for (const [k, v] of Object.entries(before)) if (v != null && v !== "" && v !== 0) P.legal[k] = v;
+    if (siteBefore) P.site.area = siteBefore;
   }
   if (j.recap && !P.site.area) P.site.area = parseFloat(j.recap.platArea) || P.site.area;
   const floors = j.floors || [];
@@ -869,6 +914,7 @@ function bind() {
       if (a === "postcode") openSheet("postcode");
       else if (a === "pick") startPick();
       else if (a === "upload") openSheet("upload");
+      else if (a === "upload-direct") $("#fileIn").click();
       else if (a === "sample") { $("#q").value = SAMPLE_ADDRESS; lookup({ q: SAMPLE_ADDRESS }, { example: true }); }
       else if (a === "example") { applyExample(); if (sheetOpen) back(); }
       else openSheet(a);
