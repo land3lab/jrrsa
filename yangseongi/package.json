@@ -1,0 +1,7 @@
+{
+  "name": "yangseongi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "양성이 — 위반건축물 양성화 시뮬레이터 (랜드3 연구소)",
+  "engines": { "node": ">=18" }
+}

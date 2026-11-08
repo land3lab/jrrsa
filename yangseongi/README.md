@@ -1,6 +1,13 @@
 # 양성이 — 위반건축물 양성화 시뮬레이터
 
-주소: `/yangseongi/` (기존 Vercel 프로젝트에 함께 배포됨)
+독립 폴더 `yangseongi/` — Vercel 프로젝트의 **Root Directory = `yangseongi`** 로 배포하면 사이트 첫 화면(`/`)이 양성이입니다.
+
+```
+yangseongi/
+  public/   앱 화면 (index.html, js, css, icons, vendor)
+  api/      서버 함수 (ys-lookup: 주소→건축HUB·브이월드, ys-config)
+  supabase/ 로그인 기록 테이블 SQL
+```
 
 ## 화면 구성
 - 첫 화면: 주소 입력 → **필수 4기능 카드** (① 위반 여부 ② 양성화 대상·가능 ③ 전후 차이 ④ 전후 3D)
@@ -12,11 +19,11 @@
 ## 서버 환경변수 (Vercel → Settings → Environment Variables)
 | 변수 | 필수 | 용도 |
 | --- | --- | --- |
-| `DATA_GO_KR_KEY` | 선택 | 공공데이터포털 키. 없으면 `api/_util.js`의 기존 키 사용. **건축HUB 건축물대장정보 서비스(BldRgstHubService) 활용신청이 되어 있어야 함** |
+| `DATA_GO_KR_KEY` | 선택 | 공공데이터포털 키. 없으면 `api/_util.js`의 기본 키 사용. **건축HUB 건축물대장정보 서비스(BldRgstHubService) 활용신청이 되어 있어야 함** |
 | `VWORLD_KEY` | 권장 | 브이월드 키 — 주소→좌표, 필지 경계, 용도지역 자동, 지도 클릭 선택, 브이월드 배경지도/항공사진. 등록 도메인에 배포 도메인 추가 |
 | `KAKAO_REST_KEY` | 선택 | 카카오 로컬 주소검색 (도로명·지번 → 법정동코드·좌표) |
 | `JUSO_KEY` | 선택 | 도로명주소 검색 API (도로명·지번 → 법정동코드) |
-| `SUPABASE_URL`, `SUPABASE_ANON_KEY` | 선택 | 로그인(외부 서버 저장·자동 재로그인)과 기록 서버 저장. `supabase/yangseongi.sql` 1회 실행 |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY` | 선택 | 로그인(외부 서버 저장·자동 재로그인)과 기록 서버 저장. `supabase/yangseongi.sql` (적용 완료) |
 
 키가 하나도 없으면: 서울 일부 동(봉천동 등)은 내장 표로 바로 풀고, 그 외는 🔎 주소검색(카카오 우편번호, 키 불필요)으로 법정동코드를 얻어 건축HUB를 조회합니다.
 
@@ -26,7 +33,7 @@
 - 건축법 제80조, 시행령 제115조의3·별표 15 (이행강제금)
 - 국토계획법 시행령 제84조·제85조, 서울특별시 도시계획 조례 제44조·제48조
 
-숫자는 `public/yangseongi/js/laws.js` 한 곳에 모여 있습니다.
+숫자는 `public/js/laws.js` 한 곳에 모여 있습니다.
 
 ## 한계
 - 건축물대장 **공식 발급**은 정부24 본인인증이 필요해 자동화하지 않음 → 건축HUB API로 같은 내용을 자동 조회하고, 발급받은 PDF(비밀번호 포함)를 첨부하면 자동 인식
