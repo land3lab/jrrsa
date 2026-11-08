@@ -696,7 +696,16 @@ function applyLookup(j, params, keepLegal) {
     P.legal.floorsAbove = n(t.grndFlrCnt) || P.legal.floorsAbove;
     P.legal.floorsBelow = n(t.ugrndFlrCnt) || 0;
     P.legal.height = n(t.heit) || 0;
-    P.legal.purpose = t.mainPurpsCdNm || P.legal.purpose;
+    // 건축HUB는 다가구·다중주택도 주용도를 '단독주택'으로 주고 세부 용도는 기타용도(etcPurps)·층별 용도에 적는다.
+    const detail = `${t.etcPurps || ""} ${(j.floors || []).map((f) => `${f.mainPurpsCdNm || ""} ${f.etcPurps || ""}`).join(" ")}`;
+    const fam = parseFloat(t.fmlyCnt) || 0;
+    let purpose = t.mainPurpsCdNm || P.legal.purpose;
+    if (/단독주택/.test(purpose)) {
+      if (/다가구/.test(detail) || fam >= 2) purpose = "다가구주택";
+      else if (/다중주택/.test(detail)) purpose = "다중주택";
+    }
+    P.legal.purpose = purpose;
+    P.legal.etcPurps = t.etcPurps || "";
     P.legal.structure = t.strctCdNm || "";
     P.legal.units = Math.max(n(t.hhldCnt) || 0, n(t.fmlyCnt) || 0, n(t.hoCnt) || 0) || 1;
     if (t.useAprDay && /^\d{8}$/.test(t.useAprDay)) P.legal.useAprDay = `${t.useAprDay.slice(0, 4)}-${t.useAprDay.slice(4, 6)}-${t.useAprDay.slice(6, 8)}`;

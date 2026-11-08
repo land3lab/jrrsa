@@ -222,12 +222,14 @@ export function analyze(P) {
   targetReasons.push({ ok: completedOk, text: `2023.12.31 당시 사실상 완공 (제3조①)` });
   targetReasons.push({ ok: residentialOk, text: `주거용 연면적 50% 이상 (제2조①2) — 현재 ${Math.round(resRatio * 100)}%` });
   targetReasons.push({ ok: typeOk, text: typeOk ? `대상 용도: ${CATEGORY_LABEL[cat]}` : `대상 용도 아님: ${CATEGORY_LABEL[cat] || cat} (다세대·단독·다가구, 주택 사용 근생만 대상)` });
-  if (typeOk) targetReasons.push({ ok: capOk, text: `${capLabel} — 현재 ${r1(capCur)}㎡${capOk ? "" : ` (${r1(capExcess)}㎡ 초과)`}` });
+  if (typeOk) targetReasons.push({ ok: capOk, text: `${capLabel} — 현재 ${r1(capCur)}㎡${capOk ? "" : ` (${r1(capExcess)}㎡ 초과)`}${typeOk && cat !== "dasedae" && before.tot > capValue ? " · 대장(적법) 면적만으로도 초과" : ""}` });
   if (cat === "geunsaeng") targetReasons.push({ ok: !!P.checks?.usedAsHouse, text: "근생 허가 후 2023.12.31 이전부터 주택으로 사용 (제3조①3)" });
   for (const e of exclusionsHit) targetReasons.push({ ok: false, text: `적용 제외: ${e.label} (${e.basis})` });
 
   const isTarget = isViolation && completedOk && residentialOk && typeOk && exclusionsHit.length === 0;
-  const targetStatus = !isViolation ? "none" : !isTarget ? "no" : capOk ? "yes" : "partial";
+  // 적법 부분만으로 이미 상한을 넘으면 위반부를 모두 철거해도 대상이 될 수 없다
+  const legalOverCap = typeOk && cat !== "dasedae" && before.tot > capValue + 1e-6;
+  const targetStatus = !isViolation ? "none" : !isTarget || legalOverCap ? "no" : capOk ? "yes" : "partial";
 
   // ── 사용승인 기준 (제6조)
   const crit = P.checks?.criteria || {};
