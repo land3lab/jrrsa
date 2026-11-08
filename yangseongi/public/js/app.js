@@ -858,7 +858,7 @@ async function init() {
   setupHistory();
   try { S.cfg = await fetch("../api/ys-config").then((r) => (r.ok ? r.json() : {})); } catch { S.cfg = {}; }
   try { mapV = createMap($("#map"), { onPick, vworldKey: S.cfg.vworldKey }); } catch (e) { console.warn("지도 초기화 실패", e); }
-  try { view = createView($("#three")); } catch (e) { console.warn("3D 초기화 실패", e); }
+  try { view = createView($("#three"), { scrollFriendly: matchMedia("(pointer: coarse)").matches }); } catch (e) { console.warn("3D 초기화 실패", e); }
   try { thumb = createView($("#thumb"), { thumb: true }); } catch (e) { console.warn(e); }
   render();
   mapV?.fit(); view?.fit(); view?.update(S.P, S.R, S.mode);

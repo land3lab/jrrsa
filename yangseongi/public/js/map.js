@@ -16,7 +16,17 @@ export function toLocal(origin, lat, lng) {
 }
 
 export function createMap(el, { onPick, vworldKey } = {}) {
-  const map = L.map(el, { zoomControl: false, attributionControl: true, maxZoom: 21 }).setView([37.4784, 126.9516], 18);
+  const touch = window.matchMedia?.("(pointer: coarse)").matches;
+  // 휴대폰: 한 손가락은 페이지 스크롤, 두 손가락으로 지도 이동·확대 (dragging 끔 → touch-action: pan-x pan-y)
+  const map = L.map(el, { zoomControl: false, attributionControl: true, maxZoom: 21, dragging: !touch, tap: false }).setView([37.4784, 126.9516], 18);
+  if (touch) {
+    const hint = L.DomUtil.create("div", "map-hint", el);
+    hint.textContent = "두 손가락으로 지도 이동·확대";
+    let t = 0;
+    el.addEventListener("touchmove", (e) => {
+      if (e.touches.length === 1) { hint.classList.add("on"); clearTimeout(t); t = setTimeout(() => hint.classList.remove("on"), 1200); }
+    }, { passive: true });
+  }
   const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 21, maxNativeZoom: 19, attribution: "© OpenStreetMap" });
   const layers = { "일반지도": osm };
   if (vworldKey) {

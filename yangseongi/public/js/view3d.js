@@ -42,7 +42,7 @@ function textSprite(text, color = "#1D2C5E", bg = "rgba(255,255,255,.92)") {
   return sp;
 }
 
-export function createView(el, { thumb = false } = {}) {
+export function createView(el, { thumb = false, scrollFriendly = false } = {}) {
   const renderer = new THREE.WebGLRenderer({ antialias: !thumb, alpha: true, preserveDrawingBuffer: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, thumb ? 1.5 : 2));
   renderer.shadowMap.enabled = !thumb;
@@ -72,6 +72,11 @@ export function createView(el, { thumb = false } = {}) {
     controls.enableDamping = true;
     controls.maxPolarAngle = Math.PI * 0.49;
     controls.minDistance = 6; controls.maxDistance = 220;
+    if (scrollFriendly) {
+      // 휴대폰 본문 화면: 한 손가락은 페이지 스크롤, 두 손가락으로 회전·확대
+      controls.touches = { ONE: null, TWO: THREE.TOUCH.DOLLY_ROTATE };
+      host.style.touchAction = "pan-y";
+    }
   }
 
   const world = new THREE.Group();
