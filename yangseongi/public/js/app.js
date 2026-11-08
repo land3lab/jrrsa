@@ -258,13 +258,21 @@ function sheetView3d(b) {
 
 function sheetLimits(b) {
   const R = S.R;
+  const total = R.violation.totalArea || 0;
   const tbl = (T) => `
-    <table class="tbl"><tr><th>기준</th><th>허용 한도</th><th>남길 수 있는 위반면적</th></tr>
-    ${T.rows.map((r) => `<tr class="${T.binding && r.key === T.binding.key ? "bind" : ""}"><td>${esc(r.label)}<br><small>${esc(r.basis)}</small></td><td>${esc(r.limit)}</td><td>${f2(r.keep)}㎡</td></tr>`).join("")}
-    </table>
+    <div class="lims">${T.rows.map((r) => {
+      const bind = T.binding && r.key === T.binding.key;
+      const pct = total > 0 ? Math.max(0, Math.min(100, (r.keep / total) * 100)) : 100;
+      return `<div class="lim ${bind ? "bind" : ""}">
+        <div class="lim-h"><b>${esc(r.label)}</b>${bind ? '<span class="badge b-warn">가장 제한적</span>' : ""}</div>
+        <div class="lim-r"><span>허용 한도</span><b>${esc(r.limit)}</b></div>
+        <div class="lim-r"><span>남길 수 있는 위반면적</span><b>${f2(r.keep)}㎡ <small>/ ${f2(total)}㎡</small></b></div>
+        <div class="bar"><i style="width:${pct}%"></i></div>
+        <small class="lim-b">${esc(r.basis)}</small></div>`;
+    }).join("")}</div>
     <p>▶ 가장 제한적인 기준: <b>${esc(T.binding?.label || "-")}</b><br>▶ 존치 가능 <b style="color:var(--ok)">${f2(T.keep)}㎡</b> · 최소 보완(철거·감축) <b style="color:var(--bad)">${f2(T.cut)}㎡</b></p>`;
   b.innerHTML = `
-    <p>위반면적 합계 <b>${f2(R.violation.totalArea)}㎡</b> 중 기준별로 <b>얼마까지 남길 수 있는지</b> 계산했습니다. 주황 행이 가장 제한적인 기준입니다.</p>
+    <p>위반면적 합계 <b>${f2(R.violation.totalArea)}㎡</b> 중 기준별로 <b>얼마까지 남길 수 있는지</b> 계산했습니다. 막대가 짧을수록 많이 줄여야 하고, 주황 카드가 가장 제한적인 기준입니다.</p>
     <h4>A. ${R.tracks.A.name} <span class="badge ${R.tracks.A.available ? "b-ok" : "b-bad"}">${R.tracks.A.available ? "적용 가능" : "대상 아님"}</span> <small>${R.tracks.A.period}</small></h4>
     ${tbl(R.tracks.A)}
     <h4>B. ${R.tracks.B.name} <small>${R.tracks.B.period}</small></h4>
@@ -426,30 +434,37 @@ function sheetRegister(b) {
   b.innerHTML = `
     <p style="font-size:13px">출처: ${(P.sources || []).map(esc).join(" · ") || "-"} ${P.isSample ? '<span class="badge b-warn">샘플 예시 값</span>' : ""}</p>
     ${S.floors?.length ? `<details><summary style="font-weight:800;cursor:pointer;font-size:13px">층별 개요 (건축HUB) ${S.floors.length}개</summary><table class="tbl">${S.floors.map((x) => `<tr><td>${esc(x.flrNoNm || x.flrNo)}</td><td>${esc(x.mainPurpsCdNm || x.etcPurps)}</td><td>${f2(x.area)}㎡</td></tr>`).join("")}</table></details>` : ""}
-    <form class="form" id="regForm" style="margin-top:10px">
-      <label class="full">대지위치(지번)<input name="address.jibunAddress" value="${esc(P.address.jibunAddress)}"></label>
-      <label>대지면적(㎡)<input type="number" step="0.01" name="site.area" value="${P.site.area}"></label>
-      <label>용도지역<select name="site.zone"><option value="">선택</option>${zoneOpts}</select></label>
-      <label>주용도<select name="legal.purpose">${purposeOpts}</select></label>
-      ${P.legal.etcPurps ? `<label class="full">대장 기타용도 (건축HUB)<input value="${esc(P.legal.etcPurps)}" readonly></label>` : ""}
-      <label>구조<input name="legal.structure" value="${esc(P.legal.structure || "")}"></label>
-      <label>건축면적(㎡)<input type="number" step="0.01" name="legal.archArea" value="${P.legal.archArea}"></label>
-      <label>연면적(㎡)<input type="number" step="0.01" name="legal.totArea" value="${P.legal.totArea}"></label>
-      <label>용적률산정용 연면적(㎡)<input type="number" step="0.01" name="legal.farArea" value="${P.legal.farArea}"></label>
-      <label>주거용 면적(㎡)<input type="number" step="0.01" name="legal.residentialArea" value="${P.legal.residentialArea ?? P.legal.totArea}"></label>
-      <label>지상층수<input type="number" name="legal.floorsAbove" value="${P.legal.floorsAbove}"></label>
-      <label>높이(m)<input type="number" step="0.1" name="legal.height" value="${P.legal.height}"></label>
-      <label>세대·가구수<input type="number" name="legal.units" value="${P.legal.units}"></label>
-      <label>세대당 최대 전용면적(㎡, 다세대)<input type="number" step="0.01" name="legal.unitExclusiveMax" value="${P.legal.unitExclusiveMax ?? ""}"></label>
-      <label>사용승인일<input type="date" name="legal.useAprDay" value="${esc(P.legal.useAprDay || "")}"></label>
-      <label>전면도로 너비(m)<input type="number" step="0.1" name="site.roadWidth" value="${P.site.roadWidth}"></label>
-      <label>도로에 접한 길이(m)<input type="number" step="0.1" name="site.roadFrontage" value="${P.site.roadFrontage}"></label>
-      <label>대지 동서 길이(m)<input type="number" step="0.1" name="site.width" value="${P.site.width ?? ""}"></label>
-      <label>대지 남북 길이(m)<input type="number" step="0.1" name="site.depth" value="${P.site.depth ?? ""}"></label>
-      <label class="cb full"><input type="checkbox" name="legal.violationMarked" ${P.legal.violationMarked ? "checked" : ""}>건축물대장에 '위반건축물' 표기 있음</label>
+    <form id="regForm" style="margin-top:10px">
+      <details class="grp" open><summary>판정에 쓰는 값 <small>용도·면적·층수</small></summary><div class="form">
+        <label>주용도<select name="legal.purpose">${purposeOpts}</select></label>
+        <label>용도지역<select name="site.zone"><option value="">선택</option>${zoneOpts}</select></label>
+        ${P.legal.etcPurps ? `<label class="full">대장 기타용도 (건축HUB)<input value="${esc(P.legal.etcPurps)}" readonly></label>` : ""}
+        <label>대지면적(㎡)<input type="number" inputmode="decimal" step="0.01" name="site.area" value="${P.site.area}"></label>
+        <label>연면적(㎡)<input type="number" inputmode="decimal" step="0.01" name="legal.totArea" value="${P.legal.totArea}"></label>
+        <label>건축면적(㎡)<input type="number" inputmode="decimal" step="0.01" name="legal.archArea" value="${P.legal.archArea}"></label>
+        <label>지상층수<input type="number" inputmode="numeric" name="legal.floorsAbove" value="${P.legal.floorsAbove}"></label>
+        <label>높이(m)<input type="number" inputmode="decimal" step="0.1" name="legal.height" value="${P.legal.height}"></label>
+        <label>세대·가구수<input type="number" inputmode="numeric" name="legal.units" value="${P.legal.units}"></label>
+        <label class="cb full"><input type="checkbox" name="legal.violationMarked" ${P.legal.violationMarked ? "checked" : ""}>건축물대장에 '위반건축물' 표기 있음</label>
+      </div></details>
+      <details class="grp"><summary>대장 세부 항목 <small>지번·구조·용적률 면적·사용승인일</small></summary><div class="form">
+        <label class="full">대지위치(지번)<input name="address.jibunAddress" value="${esc(P.address.jibunAddress)}"></label>
+        <label>구조<input name="legal.structure" value="${esc(P.legal.structure || "")}"></label>
+        <label>사용승인일<input type="date" name="legal.useAprDay" value="${esc(P.legal.useAprDay || "")}"></label>
+        <label>용적률산정용 연면적(㎡)<input type="number" inputmode="decimal" step="0.01" name="legal.farArea" value="${P.legal.farArea}"></label>
+        <label>주거용 면적(㎡)<input type="number" inputmode="decimal" step="0.01" name="legal.residentialArea" value="${P.legal.residentialArea ?? P.legal.totArea}"></label>
+        <label class="full">세대당 최대 전용면적(㎡, 다세대)<input type="number" inputmode="decimal" step="0.01" name="legal.unitExclusiveMax" value="${P.legal.unitExclusiveMax ?? ""}"></label>
+      </div></details>
+      <details class="grp"><summary>대지 · 도로 <small>접도·대지 형상</small></summary><div class="form">
+        <label>전면도로 너비(m)<input type="number" inputmode="decimal" step="0.1" name="site.roadWidth" value="${P.site.roadWidth}"></label>
+        <label>도로에 접한 길이(m)<input type="number" inputmode="decimal" step="0.1" name="site.roadFrontage" value="${P.site.roadFrontage}"></label>
+        <label>대지 동서 길이(m)<input type="number" inputmode="decimal" step="0.1" name="site.width" value="${P.site.width ?? ""}"></label>
+        <label>대지 남북 길이(m)<input type="number" inputmode="decimal" step="0.1" name="site.depth" value="${P.site.depth ?? ""}"></label>
+      </div></details>
     </form>
     <div class="note">입력하는 즉시 다시 계산됩니다. 대지 형상은 브이월드 필지 경계가 있으면 자동, 없으면 면적으로 추정합니다.</div>`;
   $("#regForm").oninput = (e) => {
+    if (!e.target.name) return;
     const t = e.target, [g, k] = t.name.split(".");
     let v = t.type === "checkbox" ? t.checked : t.type === "number" ? (t.value === "" ? null : +t.value) : t.value;
     S.P[g][k] = v;
@@ -495,18 +510,26 @@ function sheetViolEdit(b) {
 
 function sheetChecks(b) {
   const P = S.P, ex = P.checks.exclusions || (P.checks.exclusions = {}), cr = P.checks.criteria || (P.checks.criteria = {});
+  const exHit = SPECIAL_ACT.exclusions.filter((e) => ex[e.key]).length;
+  const crFail = SPECIAL_ACT.approvalCriteria.filter((c) => cr[c.key] === false).length;
   b.innerHTML = `
-    <form class="form" id="chkForm">
+    <form id="chkForm">
+      <details class="grp" open><summary>기본 요건 <small>완공 시기·용도</small></summary><div class="form">
       <label class="cb full"><input type="checkbox" name="completedBy2023" ${P.checks.completedBy2023 !== false ? "checked" : ""}>2023.12.31 당시 사실상 완공 (항공사진·과세자료 등으로 입증)</label>
       ${P.legal.category === "geunsaeng" ? `<label class="cb full"><input type="checkbox" name="usedAsHouse" ${P.checks.usedAsHouse ? "checked" : ""}>근린생활시설을 2023.12.31 이전부터 주택으로 사용</label>
         <label>주택 사용 형태<select name="usedAsType"><option value="dagagu">다가구</option><option value="dasedae" ${P.checks.usedAsType === "dasedae" ? "selected" : ""}>다세대</option><option value="dandok" ${P.checks.usedAsType === "dandok" ? "selected" : ""}>단독</option></select></label>` : ""}
       ${P.legal.category === "dandok" ? `<label>단독 연면적 상한(조례, 165~330㎡)<input type="number" name="dandokOrdinanceCap" value="${P.checks.dandokOrdinanceCap || 165}"></label>` : ""}
       ${P.legal.category === "dasedae" ? `<label>위반으로 면적이 늘어난 세대 수<input type="number" name="affectedUnits" value="${P.checks.affectedUnits || 1}"></label><label>세대당 늘어난 전용면적(㎡)<input type="number" step="0.1" name="perUnitAddArea" value="${P.checks.perUnitAddArea || ""}"></label>` : ""}
-      <h4 class="full">적용 제외 구역 (특조법 제3조②③) — 해당하면 체크</h4>
+      </div></details>
+      <details class="grp" ${exHit ? "open" : ""}><summary>적용 제외 구역 <small class="${exHit ? "bad" : "ok"}">${exHit ? `${exHit}개 해당` : "해당 없음"}</small></summary><div class="form">
+      <p class="full" style="margin:0;font-size:12.5px;color:var(--ink-2)">특조법 제3조②③ — 해당하면 체크</p>
       ${SPECIAL_ACT.exclusions.map((e) => `<label class="cb full"><input type="checkbox" data-ex="${e.key}" ${ex[e.key] ? "checked" : ""}>${e.label} <small style="color:var(--ink-3)">${e.basis}</small></label>`).join("")}
-      <h4 class="full">사용승인 기준 (제6조) — 충족하면 체크</h4>
+      </div></details>
+      <details class="grp" ${crFail ? "open" : ""}><summary>사용승인 기준 <small class="${crFail ? "bad" : "ok"}">${crFail ? `${crFail}개 미충족` : "모두 충족"}</small></summary><div class="form">
+      <p class="full" style="margin:0;font-size:12.5px;color:var(--ink-2)">특조법 제6조 — 충족하면 체크</p>
       ${SPECIAL_ACT.approvalCriteria.map((c) => `<label class="cb full"><input type="checkbox" data-cr="${c.key}" ${cr[c.key] !== false ? "checked" : ""}>${c.label} <small style="color:var(--ink-3)">${c.basis}</small></label>`).join("")}
       <label class="cb full"><input type="checkbox" name="setbackOk" ${P.checks.setbackOk ? "checked" : ""}>(도로 3m 미만인 경우) 도로 중심선에서 1.5m 건축선 후퇴부에 건물 없음</label>
+      </div></details>
     </form>
     <div class="note">브이월드 키가 설정되면 용도지역은 자동으로 읽습니다. 도시계획시설·정비구역 등은 토지이음(eum.go.kr) 토지이용계획에서 확인하세요.</div>
     <a class="btn btn-ghost" style="display:inline-flex;align-items:center;text-decoration:none" target="_blank" rel="noopener" href="https://www.eum.go.kr/web/ar/lu/luLandDet.jsp">토지이음 토지이용계획 열기 ↗</a>`;
@@ -517,6 +540,13 @@ function sheetChecks(b) {
     else if (t.type === "checkbox") P.checks[t.name] = t.checked;
     else P.checks[t.name] = t.type === "number" ? +t.value : t.value;
     render();
+    if (t.dataset.ex || t.dataset.cr) {
+      // 요약 숫자만 갱신 (열린 그룹은 그대로)
+      const eh = SPECIAL_ACT.exclusions.filter((x) => ex[x.key]).length, cf = SPECIAL_ACT.approvalCriteria.filter((x) => cr[x.key] === false).length;
+      const sm = $$("#chkForm summary small");
+      if (sm[1]) { sm[1].textContent = eh ? `${eh}개 해당` : "해당 없음"; sm[1].className = eh ? "bad" : "ok"; }
+      if (sm[2]) { sm[2].textContent = cf ? `${cf}개 미충족` : "모두 충족"; sm[2].className = cf ? "bad" : "ok"; }
+    }
   };
 }
 
@@ -883,11 +913,34 @@ function bind() {
   $("#installBtn").onclick = () => openSheet("install");
 }
 
+function setupNavSpy() {
+  if (!("IntersectionObserver" in window)) return;
+  const pick = (g) => $$("#bnav button").forEach((b) => b.classList.toggle("on", b.dataset.go === g));
+  const vis = new Map();
+  const io = new IntersectionObserver((ents) => {
+    ents.forEach((en) => vis.set(en.target.id, en.intersectionRatio));
+    let best = "ess", r = -1;
+    for (const [id, v] of vis) if (v > r) { r = v; best = id; }
+    pick(best === "viewerPanel" ? (S.layout === "3d" ? "3d" : "map") : best === "tiles" ? "more" : "top");
+  }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
+  ["ess", "viewerPanel", "tiles"].forEach((id) => io.observe(document.getElementById(id)));
+}
+
+function setupGuide() {
+  const g = $("#guide");
+  if (!g) return;
+  if (localStorage.getItem("ysg.guide.hidden") === "1") { g.hidden = true; return; }
+  g.hidden = false;
+  g.querySelector("[data-x]").onclick = () => { g.hidden = true; localStorage.setItem("ysg.guide.hidden", "1"); };
+}
+
 async function init() {
   $("#lawDate").textContent = LAW_CHECKED_AT;
   const startSheet = location.hash.slice(1);
   bind();
   setupHistory();
+  setupGuide();
+  setupNavSpy();
   try { S.cfg = await fetch("../api/ys-config").then((r) => (r.ok ? r.json() : {})); } catch { S.cfg = {}; }
   try { mapV = createMap($("#map"), { onPick, vworldKey: S.cfg.vworldKey }); } catch (e) { console.warn("지도 초기화 실패", e); }
   try { view = createView($("#three"), { scrollFriendly: matchMedia("(pointer: coarse)").matches }); } catch (e) { console.warn("3D 초기화 실패", e); }
