@@ -37,6 +37,17 @@ async function getJson(url, ms = 3500, opts) {
   try { return JSON.parse(txt); } catch { return { _raw: txt.slice(0, 300), _status: r.status }; }
 }
 
+// 브이월드 키는 등록한 서비스 URL(도메인)과 함께 호출해야 한다. 서버 호출이라 domain 파라미터로 알려준다.
+let VW_DOMAIN = process.env.VWORLD_DOMAIN || "";
+const vwErrors = [];
+function vwCheck(j, what) {
+  const st = j?.response?.status;
+  if (j && st && st !== "OK" && st !== "NOT_FOUND") vwErrors.push(`${what}: ${j.response?.error?.text || j.response?.error?.code || st}`);
+  if (!j) vwErrors.push(`${what}: 응답 없음`);
+  if (j && j._raw) vwErrors.push(`${what}: ${String(j._raw).slice(0, 120)}`);
+}
+const dom = () => (VW_DOMAIN ? `&domain=${encodeURIComponent(VW_DOMAIN)}` : "");
+
 function pad4(n) { return String(parseInt(n || "0", 10) || 0).padStart(4, "0"); }
 
 function fromPnu(pnu) {
@@ -55,8 +66,9 @@ function toPnu(a) {
 async function viaVworld(q, key) {
   const base = "https://api.vworld.kr/req/search";
   for (const category of ["parcel", "road"]) {
-    const u = `${base}?service=search&request=search&version=2.0&crs=EPSG:4326&size=5&page=1&type=address&category=${category}&format=json&errorformat=json&key=${key}&query=${encodeURIComponent(q)}`;
+    const u = `${base}?service=search&request=search&version=2.0&crs=EPSG:4326&size=5&page=1&type=address&category=${category}&format=json&errorformat=json&key=${key}${dom()}&query=${encodeURIComponent(q)}`;
     const j = await getJson(u, 3000).catch(() => null);
+    vwCheck(j, "브이월드 주소검색");
     const items = j?.response?.result?.items || [];
     if (items.length) {
       return items.map((it) => ({
@@ -101,13 +113,15 @@ function viaTable(q) {
 
 // 좌표 → 필지(연속지적도) / 용도지역 (브이월드 데이터 API)
 async function vworldFeature(layer, geomFilter, key, extra = "") {
-  const u = `https://api.vworld.kr/req/data?service=data&request=GetFeature&version=2.0&format=json&errorformat=json&size=10&crs=EPSG:4326&data=${layer}&geomFilter=${encodeURIComponent(geomFilter)}&key=${key}${extra}`;
+  const u = `https://api.vworld.kr/req/data?service=data&request=GetFeature&version=2.0&format=json&errorformat=json&size=10&crs=EPSG:4326&data=${layer}&geomFilter=${encodeURIComponent(geomFilter)}&key=${key}${dom()}${extra}`;
   const j = await getJson(u, 3500).catch(() => null);
+  vwCheck(j, `브이월드 ${layer}`);
   return j?.response?.result?.featureCollection?.features || [];
 }
 async function vworldByPnu(pnu, key) {
-  const u = `https://api.vworld.kr/req/data?service=data&request=GetFeature&version=2.0&format=json&errorformat=json&size=1&crs=EPSG:4326&data=LP_PA_CBND_BUBUN&attrFilter=${encodeURIComponent("pnu:=:" + pnu)}&key=${key}`;
+  const u = `https://api.vworld.kr/req/data?service=data&request=GetFeature&version=2.0&format=json&errorformat=json&size=1&crs=EPSG:4326&data=LP_PA_CBND_BUBUN&attrFilter=${encodeURIComponent("pnu:=:" + pnu)}&key=${key}${dom()}`;
   const j = await getJson(u, 3500).catch(() => null);
+  vwCheck(j, "브이월드 필지");
   return j?.response?.result?.featureCollection?.features || [];
 }
 function ring(feature) {
@@ -137,6 +151,8 @@ module.exports = async (req, res) => {
   const started = Date.now();
   const VW = process.env.VWORLD_KEY, KK = process.env.KAKAO_REST_KEY, JS = process.env.JUSO_KEY;
   const warnings = [];
+  vwErrors.length = 0;
+  if (!process.env.VWORLD_DOMAIN && req.headers && req.headers.host) VW_DOMAIN = `https://${req.headers["x-forwarded-host"] || req.headers.host}`;
   try {
     const qy = req.query || {};
     let addr = null;
@@ -197,6 +213,7 @@ module.exports = async (req, res) => {
     const F = H.getBrFlrOulnInfo?.ok ? H.getBrFlrOulnInfo.items : [];
     const J = H.getBrJijiguInfo?.ok ? H.getBrJijiguInfo.items : [];
     const E = H.getBrExposPubuseAreaInfo?.ok ? H.getBrExposPubuseAreaInfo.items : [];
+    if (VW && !parcel) warnings.push(`브이월드 필지 조회 실패${vwErrors.length ? ": " + vwErrors.slice(0, 2).join(" / ") : ""}`);
     if (!H.getBrTitleInfo?.ok) warnings.push(`건축물대장 조회 실패: ${H.getBrTitleInfo?.error || "응답 없음"}`);
 
     // 주 건축물(주건축물 + 연면적 최대) 선택

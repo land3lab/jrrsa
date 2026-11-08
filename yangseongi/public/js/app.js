@@ -411,6 +411,7 @@ function sheetRegister(b) {
       <label>대지면적(㎡)<input type="number" step="0.01" name="site.area" value="${P.site.area}"></label>
       <label>용도지역<select name="site.zone"><option value="">선택</option>${zoneOpts}</select></label>
       <label>주용도<select name="legal.purpose">${purposeOpts}</select></label>
+      ${P.legal.etcPurps ? `<label class="full">대장 기타용도 (건축HUB)<input value="${esc(P.legal.etcPurps)}" readonly></label>` : ""}
       <label>구조<input name="legal.structure" value="${esc(P.legal.structure || "")}"></label>
       <label>건축면적(㎡)<input type="number" step="0.01" name="legal.archArea" value="${P.legal.archArea}"></label>
       <label>연면적(㎡)<input type="number" step="0.01" name="legal.totArea" value="${P.legal.totArea}"></label>
@@ -726,6 +727,8 @@ function applyLookup(j, params, keepLegal) {
   if (j.zone) { P.site.zone = j.zone; src.push(j.parcel?.zone ? "브이월드 용도지역" : "대장 지역지구"); }
   if (j.parcel?.ring) src.push("브이월드 필지경계");
   if (a.coordApprox) src.push("좌표 추정");
+  const vwWarn = (j.warnings || []).find((w) => /브이월드/.test(w));
+  if (vwWarn) { src.push("브이월드 실패"); setTimeout(() => toast(vwWarn), 1800); }
   if (isSampleAddr) src.push("위반내역 예시");
   P.sources = [...new Set([...(keepLegal ? (P.sources || []) : []), ...src])];
   P.isSample = false;
