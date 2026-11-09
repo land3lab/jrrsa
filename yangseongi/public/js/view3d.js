@@ -48,7 +48,7 @@ function textSprite(text, color = "#1D2C5E", bg = "rgba(255,255,255,.92)") {
   tex.colorSpace = THREE.SRGBColorSpace;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
   sp.renderOrder = 10;
-  const s = 0.018;
+  const s = 0.012; // 라벨이 건물을 가리지 않게 작게
   sp.scale.set(cv.width * s, cv.height * s, 1);
   return sp;
 }

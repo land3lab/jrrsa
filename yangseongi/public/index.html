@@ -24,6 +24,7 @@
       <img src="./icons/icon-96.png" alt="양성이 로고">
       <div><b>양성이</b><small>위반건축물 양성화 시뮬레이터 · 랜드3 연구소</small></div>
     </div>
+    <button class="icon-btn" id="manBtn" aria-label="사용설명서">📖<span class="hide-s"> 설명서</span></button>
     <button class="icon-btn accent" id="installBtn" hidden>⬇ 설치</button>
     <button class="icon-btn" id="accountBtn" aria-label="내 기록">💾<span class="hide-s"> 내 기록</span></button>
   </div>
@@ -48,6 +49,7 @@
   </form>
 </div>
 
+<div class="layout">
 <main>
   <div class="guide" id="guide" hidden>
     <ol>
@@ -110,6 +112,86 @@
     최종 판단은 관할 구청 건축과·건축위원회 심의와 건축사 현장조사에 따릅니다. · 법령 확인일 <span id="lawDate"></span>
   </p>
 </main>
+<aside class="manual" id="manual" aria-label="사용설명서">
+  <div class="man-head">
+    <b>📖 사용설명서</b>
+    <button type="button" class="man-x" id="manClose" aria-label="설명서 닫기">✕</button>
+  </div>
+  <div class="man-body">
+    <div class="man-quick">
+      <b>3단계로 끝</b>
+      <ol><li><b>주소</b>를 넣거나 <b>📎 대장 파일</b>을 넣습니다</li><li>위반 여부가 <b>확인 필요</b>면 대장 첨부·위반 입력</li><li>4가지 결과 확인 → <b>🖨️ 검토표 인쇄</b></li></ol>
+    </div>
+
+    <details open><summary>1. 시작하기</summary>
+      <p><b>주소로:</b> 도로명·지번 아무거나 입력 → <b>분석</b>. 건축HUB 대장, 필지 경계, 용도지역, 건물 외곽선을 자동으로 가져옵니다.</p>
+      <p><b>대장 파일로:</b> 검색창 옆 <b>📎</b> → 사진·PDF 선택. 비밀번호 PDF는 비밀번호 칸이 뜹니다(정부24 발급본은 보통 발급 시 정한 번호).</p>
+      <p><b>지도에서:</b> <b>🗺️ 지도에서 선택</b> → 건물을 누르면 그 필지를 조회합니다.</p>
+      <div class="man-go"><button class="chip" data-act="postcode">🔎 주소검색</button><button class="chip" data-act="upload-direct">📎 대장 넣기</button><button class="chip" data-act="pick">🗺️ 지도 선택</button></div>
+    </details>
+
+    <details><summary>2. 결과 4가지 읽는 법</summary>
+      <p><b>① 위반건축물 여부</b> — 대장의 '위반건축물' 표기와 위반 내역. <b>확인 필요</b>는 아직 판단할 자료가 없다는 뜻입니다. <u>대장에서 표기를 못 찾았다고 위반이 없는 것은 아닙니다.</u></p>
+      <p><b>② 양성화 대상·가능</b> — 특정건축물 정리 특별조치법(2026.12.17 시행) 대상인지, 사용승인 기준을 통과하는지. <b>조건부 가능</b>은 일부를 줄이거나 보완하면 가능하다는 뜻.</p>
+      <p><b>③ 전후 차이</b> — 대장(전) · 현황(위반 포함) · 양성화 후(권장안)의 건폐율·용적률·연면적·높이.</p>
+      <p><b>④ 전후 3D</b> — 주황=위반, 초록=남기는 부분, 빨강 반투명=철거, 파란 면=일조 한계.</p>
+    </details>
+
+    <details><summary>3. 대장 확인 · 값이 다를 때</summary>
+      <p>수치(면적·층수)는 <b>건축HUB 값을 우선</b>, 위반 표기는 <b>첨부 대장</b>에서 읽습니다.</p>
+      <p><b>🏛️ 대장 정보</b> 맨 위 <b>출처 비교표</b>에서 첨부 값(몇 쪽)·건축HUB 값·계산에 쓴 값을 나란히 볼 수 있고, 다르면 '차이'가 표시됩니다.</p>
+      <div class="man-go"><button class="chip" data-sheet="register">🏛️ 대장 정보</button><button class="chip" data-sheet="issue">📄 정부24 발급</button></div>
+    </details>
+
+    <details><summary>4. 위반 내역 입력</summary>
+      <p>현장이 대장과 다르면 <b>✏️ 위반 내역</b>에서 유형·위치·면적을 넣습니다.</p>
+      <ul><li><b>옥상 증축</b> — 용적률·높이·일조</li><li><b>층 일부 / 수평 증축</b> — 건폐율·용적률</li><li><b>발코니·필로티</b> — 용적률</li><li><b>세대분할·용도변경</b> — 방화·피난·주차 기준 추가</li></ul>
+      <p>현장을 봤는데 위반이 없으면 <b>'현장 확인 — 위반 없음'</b>을 누르세요.</p>
+      <div class="man-go"><button class="chip" data-sheet="viol-edit">✏️ 위반 내역</button></div>
+    </details>
+
+    <details><summary>5. 지도 · 직접 그리기</summary>
+      <p>휴대폰: <b>한 손가락</b>은 화면 스크롤, <b>두 손가락</b>으로 지도 이동·확대. ＋ − ◎ ⛶(전체화면) 버튼도 있습니다.</p>
+      <p>자동 위치·모양이 틀리면 지도 위 막대에서 <b>✏️ 대지 경계 / 🏠 건물 외곽 / 📍 위반 위치</b>를 고르고 지도를 눌러 점을 찍은 뒤 <b>완료</b>. 지도·3D·계산에 바로 반영됩니다.</p>
+      <div class="man-go"><button class="chip" data-draw="parcel">✏️ 대지 경계 그리기</button><button class="chip" data-draw="building">🏠 건물 외곽 그리기</button></div>
+    </details>
+
+    <details><summary>6. 3D 보기</summary>
+      <p>본문 3D를 누르거나 ④ 카드의 <b>크게 보기</b>. <b>↺ ↻</b> 돌리기, <b>⤒ ⤓</b> 기울이기, <b>3D·위·남측·동측·북측</b> 시점, <b>전·후 나란히</b>(두 모형이 같이 돌아감), <b>⛶</b> 전체화면.</p>
+      <p>건물 모양은 브이월드 실제 외곽선(없으면 필지 모양으로 추정), 증축·철거 부분은 단순화한 상자입니다.</p>
+      <div class="man-go"><button class="chip" data-sheet="view3d">🧊 3D 크게 보기</button></div>
+    </details>
+
+    <details><summary>7. 얼마나 남길 수 있나 (최소 보완)</summary>
+      <p><b>📐 기준별 한도</b>에서 기준마다 남길 수 있는 위반면적을 막대로 보여줍니다. 주황 카드가 <b>가장 제한적인 기준</b>이고, 위반면적에서 그만큼 뺀 것이 <b>최소 보완(철거·감축) 규모</b>입니다.</p>
+      <p><b>A. 특조법</b>: 건폐율·용적률은 적용 배제, 규모 상한·일조가 한도. <b>B. 건축법 추인</b>: 조례 건폐율·용적률·일조를 모두 충족해야 합니다.</p>
+      <div class="man-go"><button class="chip" data-sheet="limits">📐 기준별 한도</button><button class="chip" data-sheet="sun">☀️ 일조</button><button class="chip" data-sheet="money">💰 과태료</button></div>
+    </details>
+
+    <details><summary>8. 확인·보완 · 검토표 인쇄</summary>
+      <p>결과 아래 <b>🔎 확인·보완</b> 띠에 추가 자료가 필요한 항목 수가 나옵니다. 모아보기에서 항목별 바로가기와 다음 조치를 확인하세요.</p>
+      <p><b>🖨️ 검토표 인쇄</b> → 인쇄 창에서 'PDF로 저장'을 고르면 상담용 한 장 보고서가 만들어집니다.</p>
+      <div class="man-go"><button class="chip" data-sheet="todo">🔎 확인·보완</button><button class="chip" data-act="report">🖨️ 인쇄</button></div>
+    </details>
+
+    <details><summary>9. 기록 · 설치 · 공개자료</summary>
+      <p><b>💾 내 기록</b>: 로그인 없이 이 기기에 저장·불러오기. 파일과 기록은 서버로 보내지 않습니다.</p>
+      <p><b>📱 설치</b>: Chrome ⋮ → 앱 설치 / 아이폰 Safari 공유 → 홈 화면에 추가.</p>
+      <p><b>🗂️ 공개자료</b>: 서초구 위반건축물 CSV를 불러와 주소를 대조합니다(조회 단서용).</p>
+      <div class="man-go"><button class="chip" data-sheet="account">💾 내 기록</button><button class="chip" data-sheet="install">📱 설치</button><button class="chip" data-sheet="public">🗂️ 공개자료</button></div>
+    </details>
+
+    <details><summary>자주 묻는 질문</summary>
+      <p><b>Q. 건축물대장을 자동으로 발급하나요?</b><br>공식 발급은 정부24 본인인증이 필요해 자동화할 수 없습니다. 같은 내용은 건축HUB로 자동 조회하고, 발급받은 PDF를 넣으면 자동으로 읽습니다.</p>
+      <p><b>Q. 지도 위치가 틀려요.</b><br>주소 아래에 '위치 미확인/근사'가 있으면 🗺️ 지도에서 선택으로 건물을 누르거나 대지 경계를 그려 주세요.</p>
+      <p><b>Q. 수치가 대장과 달라요.</b><br>🏛️ 대장 정보 → 출처 비교표에서 어느 값이 쓰였는지 보고, 직접 고칠 수 있습니다.</p>
+      <p><b>Q. 결과를 그대로 믿어도 되나요?</b><br>사전 검토용입니다. 최종 판단은 관할 구청·건축위원회 심의와 건축사 현장조사로 정해집니다. 특조법 시행령은 아직 입법예고 단계입니다.</p>
+      <div class="man-go"><button class="chip" data-sheet="laws">⚖️ 근거 법령</button></div>
+    </details>
+  </div>
+</aside>
+<button type="button" class="man-tab" id="manTab" aria-label="사용설명서 열기">📖<span>설명서</span></button>
+</div>
 
 <nav class="bnav" id="bnav">
   <button class="on" data-go="top"><i>🏠</i>홈</button>

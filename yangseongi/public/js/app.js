@@ -156,7 +156,7 @@ function renderTiles() {
   // 헤드라인 아래: 확인·보완 요약
   const todo = todoItems().filter((t) => t.level !== "info");
   const ts = $("#todoStrip");
-  if (ts) { ts.hidden = !todo.length; ts.innerHTML = todo.length ? `<span>🔎 확인·보완 <b>${todo.length}건</b> — ${esc(todo[0].text)}</span><button class="chip" data-sheet="todo">모아보기 ›</button><button class="chip" data-act="report">🖨️ 인쇄</button>` : ""; }
+  if (ts) { ts.hidden = !todo.length; ts.innerHTML = todo.length ? `<span class="ts-t">🔎 확인·보완 <b>${todo.length}건</b> <span class="ts-d">— ${esc(todo[0].text.replace(/\s*\([^)]*제\d+조[^)]*\)\s*$/, ""))}</span></span><button class="chip" data-sheet="todo">모아보기 ›</button><button class="chip" data-act="report">🖨️ 인쇄</button>` : ""; }
   $("#tiles").innerHTML = T.map(([id, ic, t, s, v]) => `<button class="tile" data-sheet="${id}"><span class="ic">${ic}</span><b>${t}</b><span>${esc(s)}</span>${v ? `<span class="val">${esc(v)}</span>` : ""}</button>`).join("");
 }
 
@@ -376,6 +376,8 @@ function setupHistory() {
   history.pushState({ v: "home" }, "", location.pathname + location.search);
   window.addEventListener("popstate", (e) => {
     const st = e.state || {};
+    if (document.body.classList.contains("man-open") && st.v !== "manual") closeManual();
+    if (st.v === "manual") { openManual(false); return; }
     if (st.v === "sheet") { openSheet(st.id, false); return; }
     if (sheetOpen) closeSheetUI();
     if (st.v === "guard") {
@@ -1183,7 +1185,29 @@ function bind() {
     $("#q").blur();
     lookup({ q });
   };
+  $("#manTab").onclick = () => openManual();
+  $("#manBtn").onclick = () => openManual();
+  $("#manClose").onclick = () => history.back();
   document.addEventListener("click", (e) => {
+    // 서랍 바깥(어두운 부분)을 누르면 닫기
+    if (document.body.classList.contains("man-open") && !e.target.closest("#manual,#manTab,#manBtn")) { history.back(); return; }
+    const inMan = e.target.closest("#manual [data-act],#manual [data-sheet],#manual [data-draw]");
+    if (inMan && document.body.classList.contains("man-open")) {
+      // 설명서를 닫은 뒤 그 기능 실행
+      const clone = { act: inMan.dataset.act, sheet: inMan.dataset.sheet, draw: inMan.dataset.draw };
+      e.stopPropagation(); e.preventDefault();
+      history.back();
+      setTimeout(() => {
+        if (clone.draw) startDrawing(clone.draw);
+        else if (clone.sheet === "report" || clone.act === "report") printReport();
+        else if (clone.sheet) openSheet(clone.sheet);
+        else if (clone.act === "upload-direct") $("#fileIn").click();
+        else if (clone.act === "pick") startPick();
+        else if (clone.act) openSheet(clone.act);
+      }, 120);
+      return;
+    }
+    if (e.target.closest("#manual [data-draw]")) { startDrawing(e.target.closest("[data-draw]").dataset.draw); return; }
     const el = e.target.closest("[data-act],[data-sheet],[data-open],[data-close],[data-z],[data-go],[data-fs]");
     if (!el) return;
     if (el.dataset.act) {
@@ -1257,6 +1281,22 @@ function bind() {
   $("#installBtn").onclick = () => openSheet("install");
 }
 
+// ── 사용설명서 서랍 (좁은 화면). 뒤로가기로 닫힌다
+const isDrawer = () => !matchMedia("(min-width:1200px)").matches;
+function openManual(push = true) {
+  if (!isDrawer()) { $("#manual").scrollIntoView({ behavior: "smooth", block: "nearest" }); return; }
+  if (document.body.classList.contains("man-open")) return;
+  document.body.classList.add("man-open");
+  if (push) history.pushState({ v: "manual" }, "", "#manual");
+}
+function closeManual() { document.body.classList.remove("man-open"); }
+// 설명서는 한 번에 한 항목만 펼침 (휴대폰에서 길어지지 않게)
+document.addEventListener("toggle", (e) => {
+  const d = e.target;
+  if (!(d instanceof HTMLDetailsElement) || !d.open || !d.closest("#manual")) return;
+  $$("#manual details[open]").forEach((x) => { if (x !== d) x.open = false; });
+}, true);
+
 function setupNavSpy() {
   if (!("IntersectionObserver" in window)) return;
   const pick = (g) => $$("#bnav button").forEach((b) => b.classList.toggle("on", b.dataset.go === g));
@@ -1300,6 +1340,7 @@ async function init() {
     lookup({ q: SAMPLE_ADDRESS }, { example: true, quiet: true });
   }
   if (SHEETS[startSheet] && startSheet !== "postcode") openSheet(startSheet);
+  if (startSheet === "manual") openManual();
   // 로그인 없이 사용 — 외부 로그인 서버는 불러오지 않는다 (기록은 이 기기에만 저장)
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
 }

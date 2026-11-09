@@ -1,5 +1,5 @@
 // 양성이 서비스워커 — 앱 껍데기는 캐시해 오프라인에서도 열리고, /api 는 항상 실시간.
-const CACHE = "yangseongi-v14";
+const CACHE = "yangseongi-v15";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./css/app.css",
   "./js/app.js", "./js/engine.js", "./js/laws.js", "./js/map.js", "./js/view3d.js", "./js/upload.js", "./js/parse.js", "./js/auth.js", "./js/sample.js",

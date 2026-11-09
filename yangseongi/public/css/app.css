@@ -325,3 +325,58 @@ body.fs-on{overflow:hidden}
   #printArea .kv th{width:80px}
   #printArea .disc{font-size:8.5pt;color:#555;margin-top:10px}
 }
+
+/* ── 사용설명서: 넓은 화면은 오른쪽 고정, 좁은 화면은 오른쪽에서 밀려 나오는 서랍 */
+.layout{max-width:1280px;margin:0 auto}
+.manual{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.man-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--navy-800);color:#fff}
+.man-head b{font-size:15px}
+.man-x{border:none;background:rgba(255,255,255,.15);color:#fff;border-radius:8px;width:32px;height:32px;font-weight:900}
+.man-body{overflow:auto;padding:10px 12px 16px;font-size:13px;line-height:1.6;color:var(--ink-2)}
+.man-body p{margin:6px 0}
+.man-body ul,.man-body ol{margin:6px 0;padding-left:18px}
+.man-body b{color:var(--ink)}
+.man-quick{background:var(--orange-50);border:1px solid #F7D2AE;border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.man-quick ol{margin:4px 0 0}
+.man-body details{border-bottom:1px solid var(--line);padding:4px 0}
+.man-body summary{cursor:pointer;font-weight:900;color:var(--navy-800);padding:8px 2px;font-size:13.5px;list-style:none;display:flex;align-items:center}
+.man-body summary::-webkit-details-marker{display:none}
+.man-body summary:after{content:"›";margin-left:auto;color:var(--ink-3);font-size:18px;transition:transform .15s}
+.man-body details[open] summary:after{transform:rotate(90deg)}
+.man-go{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 4px}
+.man-go .chip{min-height:30px;padding:4px 9px;font-size:12px}
+.man-tab{position:fixed;right:0;top:46%;z-index:45;border:none;background:var(--orange);color:#fff;border-radius:12px 0 0 12px;padding:10px 6px;font-weight:900;font-size:16px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:-2px 2px 10px rgba(0,0,0,.2)}
+.man-tab span{font-size:11px;writing-mode:vertical-rl;letter-spacing:1px}
+@media (min-width:1200px){
+  .layout{max-width:1640px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;padding:0 16px}
+  .top-in,.search{max-width:1640px}
+  .layout main{max-width:none;padding-left:0;padding-right:0}
+  .manual{position:sticky;top:76px;margin-top:14px;max-height:calc(100vh - 92px)}
+  .man-x,.man-tab,#manBtn{display:none!important}
+  body.man-hidden .layout{grid-template-columns:minmax(0,1fr) 0}
+  body.man-hidden .manual{display:none}
+}
+@media (max-width:1199px){
+  .manual{position:fixed;top:0;right:0;bottom:0;width:min(380px,90vw);z-index:90;border-radius:16px 0 0 16px;transform:translateX(105%);transition:transform .22s ease;max-height:none}
+  body.man-open .manual{transform:none}
+  body.man-open .man-tab{display:none}
+  body.man-open:after{content:"";position:fixed;inset:0;background:rgba(15,24,56,.4);z-index:85}
+}
+@media (max-width:760px){.man-tab{top:auto;bottom:calc(150px + var(--safe-b))}}
+@media print{.manual,.man-tab{display:none!important}}
+
+/* ── UI/UX 점검 반영 */
+/* 넓은 화면: 오른쪽 설명서가 있으니 위쪽 3단계 안내는 숨김 (중복) */
+@media (min-width:1200px){ .guide{display:none!important} }
+/* 휴대폰: 4가지 필수 카드가 첫 화면에 들어오도록 위쪽을 압축 */
+@media (max-width:760px){
+  .guide{display:none!important}               /* 상단 📖 설명서 버튼으로 대체 */
+  .man-tab{display:none}                        /* 카드 위에 겹치지 않게 — 상단 📖 사용 */
+  .src-line{flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;scrollbar-width:none;margin-right:-10px;padding-right:10px}
+  .src-line::-webkit-scrollbar{display:none}
+  .todo-strip{flex-wrap:nowrap;padding:6px 8px;gap:6px;margin:-4px 0 8px;font-size:12px}
+  .todo-strip .ts-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .todo-strip .ts-d{display:none}
+  .todo-strip .chip{min-height:28px;padding:3px 8px;font-size:11.5px;flex:0 0 auto}
+  .headline .a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
