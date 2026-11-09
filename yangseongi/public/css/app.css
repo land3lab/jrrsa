@@ -380,3 +380,7 @@ body.fs-on{overflow:hidden}
   .todo-strip .chip{min-height:28px;padding:3px 8px;font-size:11.5px;flex:0 0 auto}
   .headline .a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
+
+/* 화면 밖에 숨겨 둔 설명서 서랍이 휴대폰 화면 폭을 넓히지 않도록 */
+html,body{overflow-x:clip}
+@media (max-width:1199px){.manual{visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}body.man-open .manual{visibility:visible;transition:transform .22s ease}}
