@@ -146,13 +146,47 @@ function ring(feature) {
 }
 
 // ── 건축HUB 묶음 조회
-async function hub(fetchDataGoKr, a) {
+// ── 건축HUB 호출 절약
+// 같은 필지는 함수 인스턴스 메모리에 6시간 보관 (CDN 캐시와 별도로, 주소 표기가 달라도 같은 필지면 재사용)
+const HUB_MEMO = new Map();
+const HUB_TTL = 6 * 3600 * 1000;
+const hubKey = (a) => `${a.sigunguCd}-${a.bjdongCd}-${a.platGbCd || "0"}-${pad4(a.bun)}-${pad4(a.ji)}`;
+async function hubCall(fetchDataGoKr, a, op) {
+  const k = `${hubKey(a)}|${op}`;
+  const m = HUB_MEMO.get(k);
+  if (m && Date.now() - m.t < HUB_TTL) return { ...m.v, cached: true };
   const p = { sigunguCd: a.sigunguCd, bjdongCd: a.bjdongCd, platGbCd: a.platGbCd || "0", bun: pad4(a.bun), ji: pad4(a.ji), numOfRows: "100", pageNo: "1" };
-  const ops = ["getBrTitleInfo", "getBrRecapTitleInfo", "getBrFlrOulnInfo", "getBrJijiguInfo", "getBrExposPubuseAreaInfo"];
-  const res = await Promise.all(ops.map((op) => fetchDataGoKr(`${HUB}/${op}`, p).catch((e) => ({ ok: false, error: String(e) }))));
-  const out = {};
-  ops.forEach((op, i) => { out[op] = res[i]; });
-  return out;
+  const v = await fetchDataGoKr(`${HUB}/${op}`, p).catch((e) => ({ ok: false, error: String(e) }));
+  if (v && v.ok) {
+    HUB_MEMO.set(k, { t: Date.now(), v });
+    if (HUB_MEMO.size > 2000) HUB_MEMO.delete(HUB_MEMO.keys().next().value);
+  }
+  return v;
+}
+// 1단계: 표제부만
+async function hub(fetchDataGoKr, a) {
+  return { getBrTitleInfo: await hubCall(fetchDataGoKr, a, "getBrTitleInfo") };
+}
+// 2단계: 표제부·브이월드 결과를 보고 꼭 필요한 것만 추가 호출
+async function hubExtras(fetchDataGoKr, a, H, zoneKnown) {
+  const T = H.getBrTitleInfo?.ok ? H.getBrTitleInfo.items : [];
+  if (!T.length) return H; // 대장 자체가 없으면 더 부르지 않음
+  const main = T.filter((t) => t.mainAtchGbCd !== "1").sort((x, y) => (parseFloat(y.totArea) || 0) - (parseFloat(x.totArea) || 0))[0] || T[0];
+  const purp = `${main.mainPurpsCdNm || ""} ${main.etcPurps || ""}`;
+  const need = [];
+  // 총괄표제부: 표제부에 대지면적이 없거나 여러 동일 때만
+  if (!(parseFloat(main.platArea) > 0) || T.length > 1) need.push("getBrRecapTitleInfo");
+  // 층별개요: 주거 비율(근생 혼합)·다가구 판별이 필요할 때만
+  const fam = parseFloat(main.fmlyCnt) || 0;
+  if (/근린|업무|숙박|판매|기타|복합/.test(purp) || (/단독/.test(purp) && !/다가구|다중/.test(purp) && fam < 2)) need.push("getBrFlrOulnInfo");
+  // 지역지구: 브이월드에서 용도지역을 못 얻었을 때만
+  if (!zoneKnown) need.push("getBrJijiguInfo");
+  // 전유부: 다세대·연립·아파트(세대당 전용면적)일 때만
+  if (/다세대|연립|아파트|공동주택/.test(purp)) need.push("getBrExposPubuseAreaInfo");
+  const res = await Promise.all(need.map((op) => hubCall(fetchDataGoKr, a, op)));
+  need.forEach((op, i) => { H[op] = res[i]; });
+  H._calls = (H.getBrTitleInfo?.cached ? 0 : 1) + need.filter((op, i) => !res[i]?.cached).length;
+  return H;
 }
 
 module.exports = async (req, res) => {
@@ -222,6 +256,7 @@ module.exports = async (req, res) => {
     })().catch(() => null);
     const hubP = hub(fetchDataGoKr, addr);
     let [parcel, H] = await Promise.all([parcelP, hubP]);
+    H = await hubExtras(fetchDataGoKr, addr, H, !!(parcel && parcel.zone));
     delete addr._parcel;
 
     const T = H.getBrTitleInfo?.ok ? H.getBrTitleInfo.items : [];
@@ -303,8 +338,12 @@ module.exports = async (req, res) => {
       }
     }
 
+    // 대장을 찾은 성공 응답만 CDN에 하루 보관(이후 1주일은 오래된 값을 먼저 주고 뒤에서 갱신). 실패는 보관하지 않음
+    if (T.length) res.setHeader("Cache-Control", "public, max-age=0, s-maxage=86400, stale-while-revalidate=604800");
+    else res.setHeader("Cache-Control", "no-store");
     return sendJson(res, 200, {
       ok: true,
+      hubCalls: H._calls ?? null,
       address: { ...addr, lat, lng },
       candidates: candidates.slice(0, 5).map((c) => ({ roadAddress: c.roadAddress, jibunAddress: c.jibunAddress })),
       parcel,

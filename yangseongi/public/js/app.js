@@ -994,7 +994,12 @@ function applyExample() {
 // ───────────────────────── 주소 → 서버 조회
 async function lookup(params, { keepLegal = false, example = false, quiet = false } = {}) {
   if (!quiet) loading(true, "건축물대장·필지 정보를 불러오는 중…");
-  const qs = new URLSearchParams(params).toString();
+  // 캐시가 잘 맞도록 주소 표기 정리 (공백·'번지'·좌표 자릿수)
+  const norm = { ...params };
+  if (norm.q) norm.q = String(norm.q).replace(/\s+/g, " ").replace(/\s*번지\s*$/, "").replace(/\s*-\s*/g, "-").trim();
+  if (norm.lat) norm.lat = (+norm.lat).toFixed(6);
+  if (norm.lng) norm.lng = (+norm.lng).toFixed(6);
+  const qs = new URLSearchParams(norm).toString();
   try {
     const r = await fetch(`../api/ys-lookup?${qs}`, { headers: { Accept: "application/json" } });
     const j = await r.json().catch(() => ({ ok: false, error: `서버 응답 오류 (HTTP ${r.status})` }));
