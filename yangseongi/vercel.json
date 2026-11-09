@@ -1,3 +1,11 @@
 {
-  "regions": ["icn1"]
+  "regions": ["icn1"],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "jrrsa-yangseongi.vercel.app" }],
+      "destination": "https://yangseongi.land3lab.com/:path*",
+      "permanent": false
+    }
+  ]
 }

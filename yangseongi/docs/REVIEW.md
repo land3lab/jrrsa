@@ -176,7 +176,7 @@ const targetStatus = !isViolation ? "none" : !isTarget || legalOverCap ? "no" : 
 17. 대용량 `public/vendor/`(약 3MB)를 저장소에 직접 넣었다.
 
 ### 배포 작업 대기
-18. `land3lab.com` 도메인 연결: Vercel 대시보드에서 직접 추가해야 한다(연결된 도구 권한으로는 프로젝트가 보이지 않음). 브이월드 서비스 URL에도 새 도메인을 추가해야 한다.
+18. 공식 주소 `yangseongi.land3lab.com` 연결 완료(사용자 확인). 브이월드 서비스 URL도 새 주소로 변경. `jrrsa-yangseongi.vercel.app` 접속은 `vercel.json` 리다이렉트(307)로 새 주소로 넘김.
 19. 개발 세션의 네트워크 허용 목록에 비교 검토용 외부 사이트 1곳을 추가해 두었다(정리 필요).
 
 ## 8. 커밋 목록 (오래된 순)
