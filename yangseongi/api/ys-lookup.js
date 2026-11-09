@@ -38,7 +38,9 @@ async function getJson(url, ms = 3500, opts) {
 }
 
 // 브이월드 키는 등록한 서비스 URL(도메인)과 함께 호출해야 한다. 서버 호출이라 domain 파라미터로 알려준다.
-let VW_DOMAIN = process.env.VWORLD_DOMAIN || "";
+// 공식 주소. 브이월드 키의 '서비스 URL'과 같아야 한다 (Vercel 환경변수 VWORLD_DOMAIN 으로 바꿀 수 있음).
+const CANONICAL = "https://yangseongi.land3lab.com";
+let VW_DOMAIN = process.env.VWORLD_DOMAIN || CANONICAL;
 const vwErrors = [];
 function vwCheck(j, what) {
   const st = j?.response?.status;
@@ -46,7 +48,19 @@ function vwCheck(j, what) {
   if (!j) vwErrors.push(`${what}: 응답 없음`);
   if (j && j._raw) vwErrors.push(`${what}: ${String(j._raw).slice(0, 120)}`);
 }
-const dom = () => (VW_DOMAIN ? `&domain=${encodeURIComponent(VW_DOMAIN)}` : "");
+let VW_ALT = ""; // 이 요청이 들어온 주소 (공식 주소가 아직 브이월드에 등록 전일 때 대비)
+const domQ = (d) => (d ? `&domain=${encodeURIComponent(d)}` : "");
+// 브이월드 호출: 등록 도메인 불일치(인증 오류)면 들어온 주소로 한 번 더 시도하고, 되면 그 요청 동안 그 주소를 쓴다
+async function vwJson(u, ms) {
+  const j = await getJson(u.replace("__DOM__", domQ(VW_DOMAIN)), ms).catch(() => null);
+  const st = j?.response?.status;
+  const errTxt = `${j?.response?.error?.code || ""} ${j?.response?.error?.text || ""} ${j?._raw || ""}`;
+  if ((st === "ERROR" || j?._raw || !j) && /INCORRECT_KEY|INVALID|도메인|domain|인증/i.test(errTxt) && VW_ALT && VW_ALT !== VW_DOMAIN) {
+    const j2 = await getJson(u.replace("__DOM__", domQ(VW_ALT)), ms).catch(() => null);
+    if (j2?.response?.status && j2.response.status !== "ERROR") { VW_DOMAIN = VW_ALT; return j2; }
+  }
+  return j;
+}
 
 function pad4(n) { return String(parseInt(n || "0", 10) || 0).padStart(4, "0"); }
 
@@ -66,8 +80,8 @@ function toPnu(a) {
 async function viaVworld(q, key) {
   const base = "https://api.vworld.kr/req/search";
   for (const category of ["parcel", "road"]) {
-    const u = `${base}?service=search&request=search&version=2.0&crs=EPSG:4326&size=5&page=1&type=address&category=${category}&format=json&errorformat=json&key=${key}${dom()}&query=${encodeURIComponent(q)}`;
-    const j = await getJson(u, 3000).catch(() => null);
+    const u = `${base}?service=search&request=search&version=2.0&crs=EPSG:4326&size=5&page=1&type=address&category=${category}&format=json&errorformat=json&key=${key}__DOM__&query=${encodeURIComponent(q)}`;
+    const j = await vwJson(u, 3000).catch(() => null);
     vwCheck(j, "브이월드 주소검색");
     const items = j?.response?.result?.items || [];
     if (items.length) {
@@ -113,14 +127,14 @@ function viaTable(q) {
 
 // 좌표 → 필지(연속지적도) / 용도지역 (브이월드 데이터 API)
 async function vworldFeature(layer, geomFilter, key, extra = "") {
-  const u = `https://api.vworld.kr/req/data?service=data&request=GetFeature&version=2.0&format=json&errorformat=json&size=10&crs=EPSG:4326&data=${layer}&geomFilter=${encodeURIComponent(geomFilter)}&key=${key}${dom()}${extra}`;
-  const j = await getJson(u, 3500).catch(() => null);
+  const u = `https://api.vworld.kr/req/data?service=data&request=GetFeature&version=2.0&format=json&errorformat=json&size=10&crs=EPSG:4326&data=${layer}&geomFilter=${encodeURIComponent(geomFilter)}&key=${key}__DOM__${extra}`;
+  const j = await vwJson(u, 3500).catch(() => null);
   vwCheck(j, `브이월드 ${layer}`);
   return j?.response?.result?.featureCollection?.features || [];
 }
 async function vworldByPnu(pnu, key) {
-  const u = `https://api.vworld.kr/req/data?service=data&request=GetFeature&version=2.0&format=json&errorformat=json&size=1&crs=EPSG:4326&data=LP_PA_CBND_BUBUN&attrFilter=${encodeURIComponent("pnu:=:" + pnu)}&key=${key}${dom()}`;
-  const j = await getJson(u, 3500).catch(() => null);
+  const u = `https://api.vworld.kr/req/data?service=data&request=GetFeature&version=2.0&format=json&errorformat=json&size=1&crs=EPSG:4326&data=LP_PA_CBND_BUBUN&attrFilter=${encodeURIComponent("pnu:=:" + pnu)}&key=${key}__DOM__`;
+  const j = await vwJson(u, 3500).catch(() => null);
   vwCheck(j, "브이월드 필지");
   return j?.response?.result?.featureCollection?.features || [];
 }
@@ -152,7 +166,9 @@ module.exports = async (req, res) => {
   const VW = process.env.VWORLD_KEY, KK = process.env.KAKAO_REST_KEY, JS = process.env.JUSO_KEY;
   const warnings = [];
   vwErrors.length = 0;
-  if (!process.env.VWORLD_DOMAIN && req.headers && req.headers.host) VW_DOMAIN = `https://${req.headers["x-forwarded-host"] || req.headers.host}`;
+  // 서버 호출은 어느 주소로 들어왔든 브이월드에 등록한 공식 주소로 보낸다 (vercel.app 으로 접속해도 동작)
+  VW_DOMAIN = process.env.VWORLD_DOMAIN || CANONICAL;
+  VW_ALT = req.headers && req.headers.host ? `https://${req.headers["x-forwarded-host"] || req.headers.host}` : "";
   try {
     const qy = req.query || {};
     let addr = null;
@@ -234,8 +250,8 @@ module.exports = async (req, res) => {
       if (addr.jibunAddress) tries.push([addr.jibunAddress, "PARCEL"]);
       if (addr.roadAddress) tries.push([addr.roadAddress, "ROAD"]);
       for (const [q, type] of tries) {
-        const u = `https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326&format=json&errorformat=json&refine=true&simple=false&type=${type}&key=${VW}${dom()}&address=${encodeURIComponent(q)}`;
-        const g = await getJson(u, 3000).catch(() => null);
+        const u = `https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326&format=json&errorformat=json&refine=true&simple=false&type=${type}&key=${VW}__DOM__&address=${encodeURIComponent(q)}`;
+        const g = await vwJson(u, 3000).catch(() => null);
         vwCheck(g, "브이월드 지오코더");
         const pt = g?.response?.result?.point;
         if (pt && pt.x) { addr.lat = parseFloat(pt.y); addr.lng = parseFloat(pt.x); addr.coordSrc = "vworld-geocoder"; break; }

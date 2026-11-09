@@ -2,7 +2,8 @@
 
 위반건축물 양성화 사전검토 PWA. 주소나 건축물대장 파일을 넣으면 ① 위반 여부 ② 특조법 대상·가능 여부 ③ 양성화 전후 수치 ④ 전후 3D를 바로 보여준다.
 
-- 배포: Vercel 프로젝트 `jrrsa-yangseongi` (Root Directory = `yangseongi`), `https://jrrsa-yangseongi.vercel.app`
+- 배포: Vercel 프로젝트 `jrrsa-yangseongi` (Root Directory = `yangseongi`)
+- 공식 주소: `https://yangseongi.land3lab.com` (보조: `https://jrrsa-yangseongi.vercel.app`)
 - 브랜치: 작업 브랜치 `ccr-44401bfb-o5pmn7` → `main`에 직접 푸시 (fast-forward)
 - **GitHub PR: 없음.** 모든 커밋이 리뷰 없이 `main`에 들어갔다. 리뷰가 필요하면 `0383cff..main` 범위로 보면 된다.
 - 비밀값: 이 문서에는 API 키·비밀번호를 적지 않았다. 키 위치는 "남은 문제 §보안"을 볼 것.

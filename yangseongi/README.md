@@ -20,6 +20,7 @@ yangseongi/
 | 변수 | 필수 | 용도 |
 | --- | --- | --- |
 | `DATA_GO_KR_KEY` | 선택 | 공공데이터포털 키. 없으면 `api/_util.js`의 기본 키 사용. **건축HUB 건축물대장정보 서비스(BldRgstHubService) 활용신청이 되어 있어야 함** |
+| `VWORLD_DOMAIN` | 선택 | 브이월드 키에 등록한 서비스 URL. 없으면 `https://yangseongi.land3lab.com` |
 | `VWORLD_KEY` | 권장 | 브이월드 키 — 주소→좌표, 필지 경계, 용도지역 자동, 지도 클릭 선택, 브이월드 배경지도/항공사진. 등록 도메인에 배포 도메인 추가 |
 | `KAKAO_REST_KEY` | 선택 | 카카오 로컬 주소검색 (도로명·지번 → 법정동코드·좌표) |
 | `JUSO_KEY` | 선택 | 도로명주소 검색 API (도로명·지번 → 법정동코드) |
