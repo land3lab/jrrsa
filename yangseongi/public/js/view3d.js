@@ -291,6 +291,7 @@ export function createView(el, { thumb = false, scrollFriendly = false, onTap = 
     camera.position.copy(center.clone().add(d));
     camera.lookAt(center);
     if (controls) { controls.target.copy(center); controls.update(); }
+    emitCam();
   }
   const VIEWS = {
     iso: new THREE.Vector3(0.9, 0.85, 1.3),
@@ -311,12 +312,24 @@ export function createView(el, { thumb = false, scrollFriendly = false, onTap = 
     camera.position.copy(tgt.clone().add(off));
     camera.lookAt(tgt);
     controls?.update();
+    emitCam();
   }
+
+  const camListeners = new Set();
+  let syncing = false;
+  function emitCam() { if (syncing) return; camListeners.forEach((fn) => fn(camera.position.clone(), (controls ? controls.target : center).clone())); }
+  function setCam(pos, tgt) {
+    syncing = true;
+    camera.position.copy(pos); if (controls) controls.target.copy(tgt); camera.lookAt(tgt); controls?.update();
+    syncing = false;
+  }
+  function snapshot() { renderer.render(scene, camera); return renderer.domElement.toDataURL("image/png"); }
 
   function zoom(f) {
     const dir = camera.position.clone().sub(controls ? controls.target : center);
     dir.multiplyScalar(f);
     camera.position.copy((controls ? controls.target : center).clone().add(dir));
+    emitCam();
   }
 
   let t0 = performance.now();
@@ -337,6 +350,7 @@ export function createView(el, { thumb = false, scrollFriendly = false, onTap = 
   // 사용자가 직접 돌리기 전에는 크기가 바뀔 때마다 전체가 보이게 다시 맞춤
   let userMoved = false;
   controls?.addEventListener("start", () => { userMoved = true; });
+  controls?.addEventListener("change", () => emitCam());
   const ro = new ResizeObserver(() => { resize(); if (!userMoved && lastBox) fit(); });
   ro.observe(host.parentElement || host);
 
@@ -350,7 +364,9 @@ export function createView(el, { thumb = false, scrollFriendly = false, onTap = 
   }
 
   return {
-    update, resize, zoom, destroy, orbit,
+    update, resize, zoom, destroy, orbit, snapshot, setCam,
+    onCamera: (fn) => camListeners.add(fn),
+    markMoved: () => { userMoved = true; },
     fit: () => { userMoved = false; fit(); },
     view: (name) => { userMoved = false; fit(VIEWS[name] || VIEWS.iso); },
     dom: host, setAuto: (a) => (auto = a),

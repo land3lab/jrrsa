@@ -61,6 +61,7 @@ export async function readFile(file, { onProgress, askPassword } = {}) {
   const type = file.type || "";
   let text = "";
   let method = "";
+  const pageTexts = [];
 
   if (type === "application/pdf" || name.endsWith(".pdf")) {
     const lib = await loadPdf();
@@ -78,6 +79,7 @@ export async function readFile(file, { onProgress, askPassword } = {}) {
     for (let i = 1; i <= pages; i++) {
       const pg = await doc.getPage(i);
       const tc = await pg.getTextContent();
+      const startLen = text.length;
       let line = "";
       let lastY = null;
       for (const it of tc.items) {
@@ -87,18 +89,22 @@ export async function readFile(file, { onProgress, askPassword } = {}) {
         lastY = y;
       }
       text += line + "\n";
+      pageTexts.push(text.slice(startLen));
     }
     method = "PDF 텍스트";
     if (text.replace(/\s/g, "").length < 60) {
       // 스캔본 PDF → 페이지를 그려서 OCR
       text = "";
+      pageTexts.length = 0;
       for (let i = 1; i <= Math.min(doc.numPages, 3); i++) {
         const pg = await doc.getPage(i);
         const vp = pg.getViewport({ scale: 2.2 });
         const cv = document.createElement("canvas");
         cv.width = vp.width; cv.height = vp.height;
         await pg.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
-        text += (await ocr(cv, (p, m) => onProgress?.((i - 1 + p) / Math.min(doc.numPages, 3), `${i}쪽 ${m}`))) + "\n";
+        const t = await ocr(cv, (p, m) => onProgress?.((i - 1 + p) / Math.min(doc.numPages, 3), `${i}쪽 ${m}`));
+        pageTexts.push(t);
+        text += t + "\n";
       }
       method = "PDF 스캔 OCR";
     }
@@ -117,5 +123,14 @@ export async function readFile(file, { onProgress, askPassword } = {}) {
   }
   onProgress?.(1, "항목 분석 중");
   const parsed = parseRegister(text);
-  return { text, method, ...parsed };
+  if (!pageTexts.length) pageTexts.push(text);
+  // 값이 몇 쪽에 있는지 (원본 대조용)
+  const pageOf = {};
+  for (const [k, v] of Object.entries(parsed.fields)) {
+    if (typeof v !== "number") continue;
+    const sv = String(v);
+    const i = pageTexts.findIndex((t) => t.replace(/,/g, "").includes(sv));
+    if (i >= 0) pageOf[k] = i + 1;
+  }
+  return { text, method, pages: pageTexts, pageOf, fileName: file.name, ...parsed };
 }

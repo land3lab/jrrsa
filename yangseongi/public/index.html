@@ -58,6 +58,7 @@
     <button type="button" data-x aria-label="안내 닫기">✕</button>
   </div>
   <div class="headline" id="headline"><span class="dot"></span><div><div class="t">주소를 넣으면 바로 분석합니다</div><div class="a"></div></div></div>
+  <div class="todo-strip" id="todoStrip" hidden></div>
 
   <!-- 필수 4기능: 한눈에 -->
   <section class="essentials" id="ess">
@@ -76,6 +77,15 @@
       <span class="title">🗺️ 지도 · 🧊 3D 시뮬레이션</span>
       <div class="seg" id="layoutSeg"><button class="on" data-l="both">나란히</button><button data-l="map">지도</button><button data-l="3d">3D</button></div>
       <div class="seg o" id="modeSeg"><button data-m="before">양성화 전</button><button data-m="current">현황</button><button class="on" data-m="after">양성화 후</button></div>
+    </div>
+    <div class="draw-bar" id="drawBar">
+      <span class="dl">지도에 직접 표시</span>
+      <button class="chip" data-draw="parcel">✏️ 대지 경계</button>
+      <button class="chip" data-draw="building">🏠 건물 외곽</button>
+      <button class="chip" data-draw="violation">📍 위반 위치</button>
+      <button class="chip" data-draw="clear">🧹 지우기</button>
+      <span class="draw-on" hidden><b id="drawMsg">지도를 눌러 꼭짓점을 찍으세요</b>
+        <button class="chip" data-draw="undo">↶ 한 점 취소</button><button class="chip on" data-draw="done">완료</button><button class="chip" data-draw="cancel">취소</button></span>
     </div>
     <div class="viewer two" id="viewer">
       <div id="mapBox">
@@ -116,6 +126,8 @@
   </div>
 </div>
 
+<div id="printArea" aria-hidden="true"></div>
+<input type="file" id="csvIn" accept=".csv,text/csv" hidden>
 <input type="file" id="fileIn" accept="image/*,application/pdf,.pdf,.txt,.html,.htm,.xml" multiple hidden>
 <div class="loading" id="loading" hidden><div><span class="spin"></span><span id="loadingText">불러오는 중…</span></div></div>
 <div class="toast" id="toast" hidden></div>

@@ -44,7 +44,27 @@ export function createMap(el, { onPick, vworldKey } = {}) {
   let lastBounds = null;
   let picking = false;
 
+  // 그리기 모드: 지도를 눌러 점을 찍는다
+  let draw = null;
+  const drawG = L.layerGroup().addTo(map);
+  function startDraw(kind, onChange) {
+    cancelDraw();
+    const color = { parcel: "#1D2C5E", building: "#E5731C", violation: "#D64545" }[kind] || "#1D2C5E";
+    draw = { kind, pts: [], onChange, line: L.polyline([], { color, weight: 3, dashArray: "6 4" }).addTo(drawG) };
+    el.style.cursor = "crosshair";
+  }
+  function cancelDraw() { draw = null; drawG.clearLayers(); el.style.cursor = ""; }
+  function finishDraw() { const pts = draw ? draw.pts.slice() : []; cancelDraw(); return pts; }
+  function undoDraw() { if (!draw) return; draw.pts.pop(); draw.line.setLatLngs(draw.pts); drawG.eachLayer((l) => l !== draw.line && drawG.removeLayer(l)); draw.pts.forEach((p) => L.circleMarker(p, { radius: 5, color: "#fff", weight: 2, fillColor: "#E5731C", fillOpacity: 1 }).addTo(drawG)); draw.onChange?.(draw.pts.length); }
+
   map.on("click", (e) => {
+    if (draw) {
+      draw.pts.push([e.latlng.lat, e.latlng.lng]);
+      draw.line.setLatLngs(draw.kind === "violation" || draw.pts.length < 3 ? draw.pts : [...draw.pts, draw.pts[0]]);
+      L.circleMarker(e.latlng, { radius: 5, color: "#fff", weight: 2, fillColor: "#E5731C", fillOpacity: 1 }).addTo(drawG);
+      draw.onChange?.(draw.pts.length);
+      return;
+    }
     if (!picking) return;
     picking = false;
     el.style.cursor = "";
@@ -122,6 +142,16 @@ export function createMap(el, { onPick, vworldKey } = {}) {
       }
     }
 
+    // 직접 표시한 위반 위치
+    if (mode !== "before") for (const m of P.violationMarks || []) {
+      if (m.length >= 3) g.addLayer(L.polygon(m, { color: "#D64545", weight: 2, dashArray: "4 3", fillColor: "#F28C38", fillOpacity: 0.35 }).bindTooltip("표시한 위반 위치", { className: "lbl" }));
+      else if (m.length) g.addLayer(L.circleMarker(m[0], { radius: 8, color: "#fff", weight: 2, fillColor: "#D64545", fillOpacity: 1 }).bindTooltip("표시한 위반 위치", { className: "lbl" }));
+    }
+    // 위반건축물 공개자료(가져온 목록)
+    for (const r of P.publicMarks || []) {
+      if (r.lat && r.lng) g.addLayer(L.circleMarker([r.lat, r.lng], { radius: 6, color: "#fff", weight: 2, fillColor: "#7D2E3A", fillOpacity: 0.9 }).bindTooltip(`공개 위반자료: ${r.addr}${r.date ? " · " + r.date : ""}`, { className: "lbl" }));
+    }
+
     const tag = { before: "양성화 전", current: "현황", after: "양성화 후" }[mode];
     g.addLayer(L.marker(toLatLng(origin, 0, north - 2.5), { opacity: 0, interactive: false }).bindTooltip(`N↑ ${tag}`, { permanent: true, className: "lbl", direction: "top" }));
 
@@ -134,6 +164,8 @@ export function createMap(el, { onPick, vworldKey } = {}) {
     fit() { if (lastBounds) map.fitBounds(lastBounds, { maxZoom: 20 }); },
     zoom(d) { d > 0 ? map.zoomIn() : map.zoomOut(); },
     pick() { picking = true; el.style.cursor = "crosshair"; },
+    startDraw, finishDraw, cancelDraw, undoDraw,
+    get drawing() { return !!draw; },
     invalidate() { setTimeout(() => map.invalidateSize(), 50); },
   };
 }

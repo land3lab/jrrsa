@@ -15,7 +15,7 @@ const f2 = (n) => (Number.isFinite(+n) ? (+n).toLocaleString("ko-KR", { maximumF
 const won = (n) => (n >= 1e8 ? `${(n / 1e8).toFixed(2)}억원` : n >= 1e4 ? `${Math.round(n / 1e4).toLocaleString()}만원` : `${Math.round(n).toLocaleString()}원`);
 
 const S = { P: sampleProject(), R: null, mode: "after", layout: "both", cfg: {}, lastUpload: null };
-let mapV = null, view = null, thumb = null, bigView = null;
+let mapV = null, view = null, thumb = null, bigView = null, bigView2 = null;
 
 // ───────────────────────── 계산 + 그리기
 function compute() {
@@ -78,7 +78,7 @@ function render() {
   const markedNoDetail = !unknown && P.legal.violationMarked && !(P.violations || []).length;
   if (unknown) hl.className = "headline";
   if (markedNoDetail) hl.className = "headline bad";
-  hl.querySelector(".t").textContent = unknown ? "대장 조회 완료 — 위반 여부를 확인하세요 (대장 첨부 또는 현황 입력)"
+  hl.querySelector(".t").textContent = unknown ? (P.noMarkDetected ? "첨부 대장에서 위반 표기를 찾지 못함 — 원본 대장의 표기·변동사항을 확인하거나 현장 위반을 입력하세요" : "대장 조회 완료 — 위반 여부를 확인하세요 (대장 첨부 또는 현황 입력)")
     : markedNoDetail ? "대장에 '위반건축물' 표기 — 위반 내용(위치·면적)을 입력하면 양성화 가능 여부를 계산합니다" : R.headline;
   hl.querySelector(".a").textContent = `${R.zone || "용도지역 미확인"} · ${CATEGORY_LABEL[R.cat] || ""} · 대지 ${f1(R.site)}㎡ · 특조법 신고기간 ${SPECIAL_ACT.effective} ~ ${SPECIAL_ACT.expires}`;
 
@@ -91,6 +91,7 @@ function render() {
        <div class="chips"><span class="chip" role="button" data-act="viol-edit">✏️ 위반 내용 입력</span></div>`
     : unknown
     ? `<div class="big" style="color:var(--warn)">확인 필요</div>
+       ${P.noMarkDetected ? `<div class="sub">첨부 대장에서 '위반건축물' 표기를 찾지 못했습니다. <b>표기 미검출은 위반 없음이 아닙니다.</b></div>` : ""}
        <div class="sub hide-m">건축HUB 대장 정보에는 '위반건축물' 표기가 없어 자동 판정할 수 없습니다.</div>
        <div class="chips"><span class="chip" role="button" data-act="upload">📎 대장 첨부</span><span class="chip" role="button" data-act="viol-edit">✏️ 현황 입력</span><span class="chip" role="button" data-act="example">예시로 보기</span></div>`
     : V.isViolation
@@ -127,7 +128,7 @@ function render() {
   try { mapV?.update(P, R, S.mode); } catch (e) { console.warn(e); }
   try { view?.update(P, R, S.mode); } catch (e) { console.warn(e); }
   try { thumb?.update(P, R, $("#thumbSeg .on")?.dataset.m || "after"); } catch (e) { console.warn(e); }
-  try { if (bigView && !$("#sheet").hidden) bigView.update(P, R, S.bigMode || "after"); } catch (e) { console.warn(e); }
+  try { if (bigView && sheetOpen === "view3d") { bigView.update(S.P, S.R, S.bigPair ? "current" : S.bigMode || "after"); bigView2?.update(S.P, S.R, "after"); } } catch (e) { console.warn(e); }
 
   renderTiles();
 }
@@ -136,6 +137,8 @@ function renderTiles() {
   const R = S.R;
   const rec = R.tracks[R.tracks.rec];
   const T = [
+    ["todo", "🔎", "확인 · 보완 모아보기", "추가 자료가 필요한 항목과 다음 조치", `${todoItems().filter((t) => t.level !== "info").length}건`],
+    ["report", "🖨️", "검토표 인쇄 · PDF", "상담용 한 장 보고서 (PDF 저장 가능)", ""],
     ["limits", "📐", "기준별 한도 · 최소 보완", "건폐율·용적률·일조·규모별 남길 수 있는 면적", `최소 보완 ${f1(rec.cut)}㎡`],
     ["sun", "☀️", "일조사선 검토", "개정 건축법 제61조 (2026.11.12 시행)", R.sun.applies ? (R.sun.curOk ? "적합" : `이격 ${R.sun.setback}m → 필요 ${R.sun.requiredForCur}m`) : "비적용"],
     ["money", "💰", "이행강제금 · 과태료", "특조법 과태료 = 이행강제금 5회분 − 기납부", `과태료 약 ${won(R.money.specialPenalty)}`],
@@ -145,11 +148,179 @@ function renderTiles() {
     ["checks", "✅", "대상 요건 · 제외구역", "특조법 제3조·제6조 체크리스트", ""],
     ["process", "🧾", "신고 절차 · 서류", "건축사 설계도서·현장조사서 → 30일 내 처리", ""],
     ["issue", "📄", "건축물대장 발급 · 열람", "정부24 발급 · 세움터 열람 · 건축HUB", ""],
+    ["public", "🗂️", "위반건축물 공개자료", "서초구 공개 목록(CSV)과 주소 대조", S.publicRows?.length ? `${S.publicRows.length}건 불러옴` : ""],
     ["laws", "⚖️", "근거 법령 (검증)", `국가법령정보센터 대조 ${LAW_CHECKED_AT}`, ""],
     ["account", "💾", "내 기록", "로그인 없이 이 기기에 저장·불러오기", ""],
     ["install", "📱", "휴대폰에 설치", "홈 화면에 양성이 앱 추가", ""],
   ];
+  // 헤드라인 아래: 확인·보완 요약
+  const todo = todoItems().filter((t) => t.level !== "info");
+  const ts = $("#todoStrip");
+  if (ts) { ts.hidden = !todo.length; ts.innerHTML = todo.length ? `<span>🔎 확인·보완 <b>${todo.length}건</b> — ${esc(todo[0].text)}</span><button class="chip" data-sheet="todo">모아보기 ›</button><button class="chip" data-act="report">🖨️ 인쇄</button>` : ""; }
   $("#tiles").innerHTML = T.map(([id, ic, t, s, v]) => `<button class="tile" data-sheet="${id}"><span class="ic">${ic}</span><b>${t}</b><span>${esc(s)}</span>${v ? `<span class="val">${esc(v)}</span>` : ""}</button>`).join("");
+}
+
+// 추가로 확인·보완할 항목과 다음 조치
+function todoItems() {
+  const P = S.P, R = S.R, T = [];
+  const add = (level, text, act, actLabel) => T.push({ level, text, act, actLabel });
+  if (P.violationsUnknown) add("need", P.noMarkDetected ? "첨부 대장에서 위반 표기 미검출 — 최신 원본 대장(표기·변동사항) 확인" : "위반 여부 미확인 — 대장 첨부 또는 현장 위반 입력", "upload", "대장 첨부");
+  if (P.legal.violationMarked && !(P.violations || []).length) add("need", "대장에 위반 표기 — 위반 위치·면적 입력", "viol-edit", "위반 입력");
+  if (P.isExample) add("info", "위반 내역이 가상 예시입니다 — 실제 현황으로 바꾸세요", "viol-edit", "위반 입력");
+  if (!P.site.zone) add("need", "용도지역 미확인 — 토지이용계획에서 확인", "register", "대장 정보");
+  if (!P.address.lat) add("need", "지도 위치 미확인 — 지도에서 선택 또는 대지 경계 그리기", "pick", "지도에서 선택");
+  if (!P.parcelRing) add("info", "대지 경계가 추정값 — 지도에 대지 경계를 그리면 정확해집니다", "draw-parcel", "대지 경계 그리기");
+  if (!P.footprintRing) add("info", "건물 모양이 추정값 — 건물 외곽을 그리면 3D가 정확해집니다", "draw-building", "건물 외곽 그리기");
+  if (S.upload && S.hub) {
+    const keys = ["siteArea", "archArea", "totArea", "height", "floorsAbove"];
+    const d = keys.filter((k) => S.upload.fields[k] != null && S.hub[k] != null && Math.abs(+S.upload.fields[k] - +S.hub[k]) > 0.05);
+    if (d.length) add("need", `첨부 대장과 건축HUB 값이 다름 (${d.length}개 항목) — 원본 대조`, "register", "출처 비교");
+  }
+  for (const r of R.target.reasons) if (!r.ok) add("fail", r.text, "checks", "요건 체크");
+  for (const a of R.approval) if (!a.ok) add("fail", `${a.label} (${a.basis})`, a.key === "sun" ? "sun" : "checks", a.key === "sun" ? "일조 검토" : "요건 체크");
+  if (P.checks?.completedBy2023 !== false) add("info", "2023.12.31 이전 완공 입증자료(항공사진·과세자료) 준비", "process", "준비 서류");
+  add("info", "용도지역 조례·지구단위계획 별도 제한 확인 (토지이음)", "checks", "토지이음");
+  add("info", "특조법 시행령은 입법예고 중 — 신고기간·소방 기준은 공포본으로 재확인", "laws", "법령 상태");
+  return T;
+}
+
+function sheetTodo(b) {
+  const T = todoItems();
+  const L = { fail: ["보완 필요", "b-bad"], need: ["확인 필요", "b-warn"], info: ["준비", "b-navy"] };
+  const sorted = [...T.filter((t) => t.level === "fail"), ...T.filter((t) => t.level === "need"), ...T.filter((t) => t.level === "info")];
+  b.innerHTML = `
+    <p style="font-size:13.5px">결과를 확정하기 전에 확인하거나 보완할 항목입니다. 위에서부터 처리하세요.</p>
+    <ul class="checks">${sorted.map((t) => `<li class="${t.level === "info" ? "ok" : "no"}"><span class="badge ${L[t.level][1]}" style="flex:0 0 auto">${L[t.level][0]}</span><div style="flex:1">${esc(t.text)}</div>${t.act ? `<button class="chip" data-todo="${t.act}">${esc(t.actLabel)} ›</button>` : ""}</li>`).join("")}</ul>
+    <h4>다음 조치</h4>
+    <ol class="steps">
+      <li><div>최신 건축물대장(정부24) 발급 → 📎 첨부해서 위반 표기·변동사항 대조</div></li>
+      <li><div>현장 실측으로 위반 위치·면적 확정 → ✏️ 위반 내역 수정</div></li>
+      <li><div>📐 기준별 한도에서 최소 보완 규모 확인 → 보완 공사 계획</div></li>
+      <li><div>건축사 상담(설계도서·현장조사서) → 관할 구청 특정건축물 지원센터 사전 상담</div></li>
+      <li><div>🖨️ 검토표 인쇄해 상담 자료로 사용</div></li>
+    </ol>
+    <button class="btn btn-main" data-todo="report">🖨️ 검토표 인쇄</button>`;
+  b.onclick = (e) => {
+    const a = e.target.closest("[data-todo]")?.dataset.todo; if (!a) return;
+    if (a === "pick") { back(); setTimeout(startPick, 150); }
+    else if (a.startsWith("draw-")) { back(); setTimeout(() => startDrawing(a.slice(5)), 150); }
+    else if (a === "report") printReport();
+    else { history.replaceState({ v: "sheet", id: a }, "", `#${a}`); openSheet(a, false); }
+  };
+}
+
+// 2) 검토표 인쇄 (한 장 보고서)
+function printReport() {
+  const P = S.P, R = S.R, V = R.violation, rec = R.tracks[R.tracks.rec];
+  let img = "";
+  try { img = (view || thumb)?.snapshot?.() || ""; } catch (e) { /* 3D 캡처 실패 시 생략 */ }
+  const T = todoItems().filter((t) => t.level !== "info");
+  const tbl = (Tk) => `<table><tr><th>기준</th><th>허용 한도</th><th>남길 수 있는 위반면적</th></tr>${Tk.rows.map((r) => `<tr${Tk.binding && r.key === Tk.binding.key ? ' class="b"' : ""}><td>${esc(r.label)}<br><small>${esc(r.basis)}</small></td><td>${esc(r.limit)}</td><td>${f2(r.keep)}㎡</td></tr>`).join("")}</table><p>가장 제한적인 기준: <b>${esc(Tk.binding?.label || "-")}</b> · 존치 ${f2(Tk.keep)}㎡ · 최소 보완 ${f2(Tk.cut)}㎡</p>`;
+  $("#printArea").innerHTML = `
+    <div class="pr-head"><img src="./icons/icon-96.png" alt=""><div><h1>위반건축물 양성화 사전 검토표</h1><p>양성이 · 랜드3 연구소 · 작성 ${new Date().toLocaleString("ko-KR")}</p></div></div>
+    <table class="kv"><tr><th>대상</th><td>${esc(P.address.roadAddress || "")} ${esc(P.address.jibunAddress || "")}</td></tr>
+      <tr><th>자료 출처</th><td>${(P.sources || []).map(esc).join(" · ")}</td></tr>
+      <tr><th>대장 요약</th><td>${esc(R.zone || "용도지역 미확인")} · ${esc(P.legal.purpose || "")} · 대지 ${f2(R.site)}㎡ · 연면적 ${f2(R.before.tot)}㎡ · 지상 ${R.before.floors}층 · 높이 ${f2(R.before.height)}m</td></tr></table>
+    <h2>결론</h2><p class="concl">${esc($("#headline .t").textContent || R.headline)}</p>
+    <div class="four">
+      <div><h3>① 위반건축물 여부</h3><p>${P.violationsUnknown ? "확인 필요" : P.legal.violationMarked && !(P.violations || []).length ? "대장에 위반 표기 — 위반 위치·면적 입력 필요" : V.isViolation ? `위반 ${f2(V.totalArea)}㎡ · ${V.items.length}건${P.isExample ? " (가상 예시)" : ""}` : "위반 없음"}</p><ul>${V.items.map((i) => `<li>${esc(i.label)} ${i.floor ? esc(i.floor) : ""} ${i.area ? f2(i.area) + "㎡" : ""}</li>`).join("")}</ul></div>
+      <div><h3>② 양성화 대상·가능</h3><p>특조법 대상: ${{ yes: "대상", partial: "규모 초과(감축 시 대상)", no: "대상 아님", none: "해당 없음" }[R.target.status]}<br>판정: ${{ yes: "가능", conditional: "조건부 가능", no: "불가/추인 검토", none: "필요 없음" }[R.possible]}<br>권장: ${rec.name} · 최소 보완 ${f2(rec.cut)}㎡</p></div>
+      <div><h3>③ 전후 차이</h3><table><tr><th></th><th>전</th><th>현황</th><th>후</th><th>기준</th></tr>${R.compare.map((c) => `<tr><td>${c.label}</td><td>${f2(c.before)}</td><td>${f2(c.current)}</td><td>${f2(c.after)}</td><td>${esc(c.limit)}</td></tr>`).join("")}</table></div>
+      <div><h3>④ 전후 3D (양성화 후)</h3>${img ? `<img class="snap" src="${img}" alt="3D">` : "<p>3D 캡처 없음</p>"}</div>
+    </div>
+    <h2>기준별 한도 — ${esc(R.tracks.A.name)} (${R.tracks.A.available ? "적용 가능" : "대상 아님"})</h2>${tbl(R.tracks.A)}
+    <h2>기준별 한도 — ${esc(R.tracks.B.name)}</h2>${tbl(R.tracks.B)}
+    <h2>이행강제금 · 과태료 (추정)</h2><p>이행강제금 1회 약 ${won(R.money.fineOnce)} · 특조법 과태료(5회분 − 기납부) 약 ${won(R.money.specialPenalty)} · 시가표준액 ${R.money.stdPerM2.toLocaleString()}원/㎡ 가정</p>
+    <h2>확인·보완 필요 (${T.length})</h2><ul>${T.map((t) => `<li>${esc(t.text)}</li>`).join("") || "<li>없음</li>"}</ul>
+    <h2>근거 법령</h2><ul>${LAW_SOURCES.map((l) => `<li>[${esc(l.status || "")}] ${esc(l.title)} — ${esc(l.detail)}</li>`).join("")}</ul>
+    <p class="disc">본 검토표는 입력 자료와 공개 법령에 따른 사전 검토 시뮬레이션입니다. 최종 판단은 관할 구청 건축과·건축위원회 심의와 건축사 현장조사에 따릅니다. 법령 확인일 ${LAW_CHECKED_AT}.</p>`;
+  setTimeout(() => window.print(), 200);
+}
+
+// 8) 위반건축물 공개자료 (서초구 CSV 등)
+async function readCsv(file) {
+  const buf = await file.arrayBuffer();
+  let text = new TextDecoder("utf-8").decode(buf);
+  if ((text.match(/\uFFFD/g) || []).length > 5) { try { text = new TextDecoder("euc-kr").decode(buf); } catch (e) { /* 그대로 */ } }
+  const rows = [];
+  let row = [], cur = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(cur); cur = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cur); rows.push(row); row = []; cur = ""; }
+    else cur += c;
+  }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  const head = (rows.shift() || []).map((h) => h.trim());
+  const find = (re) => head.findIndex((h) => re.test(h));
+  const iRoad = find(/도로명/), iJibun = find(/지번|소재지|대지위치|주소/), iDate = find(/적발|일자|일시|등록/), iLat = find(/위도|lat|^y$/i), iLng = find(/경도|lon|lng|^x$/i);
+  return rows.filter((r) => r.length > 1).map((r) => ({
+    addr: [r[iRoad], r[iJibun]].filter(Boolean).join(" / ").trim() || r.join(" ").slice(0, 80),
+    road: iRoad >= 0 ? r[iRoad] : "", jibun: iJibun >= 0 ? r[iJibun] : "", date: iDate >= 0 ? r[iDate] : "",
+    lat: iLat >= 0 ? parseFloat(r[iLat]) : null, lng: iLng >= 0 ? parseFloat(r[iLng]) : null,
+  }));
+}
+
+function sheetPublic(b) {
+  const P = S.P;
+  const list = S.publicRows || [];
+  const norm = (x) => String(x || "").replace(/\s+/g, "").replace(/번지/g, "");
+  const keyJ = norm((P.address.jibunAddress || "").split(" ").slice(-2).join(""));
+  const keyR = norm((P.address.roadAddress || "").split(" ").slice(-2).join(""));
+  const hits = list.filter((r) => (keyJ && norm(r.jibun || r.addr).includes(keyJ)) || (keyR && norm(r.road || r.addr).includes(keyR)));
+  b.innerHTML = `
+    <p style="font-size:13.5px">지자체가 공개한 위반건축물 목록과 대상 주소를 대조합니다. <b>목록에 없다고 위반이 없는 것은 아닙니다</b> — 조회 단서로만 쓰고 최신 대장으로 확인하세요.</p>
+    <div class="law"><b>서울 서초구 위반건축물 정보 (공공데이터)</b><div>주소별 CSV · 도로명·지번·적발일 포함 · 좌표와 현재 시정 상태는 없음</div>
+      <a href="https://www.data.go.kr/data/15156178/fileData.do" target="_blank" rel="noopener" style="font-size:12.5px">공공데이터포털에서 CSV 받기 ↗</a></div>
+    <div class="law"><b>그 밖의 지역</b><div>확인 범위에서 자치구별 일괄 공개 목록은 찾지 못했습니다. 위도·경도가 있는 검증 CSV를 가지고 있다면 함께 불러올 수 있습니다.</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn btn-navy" id="csvPick">📂 CSV 불러오기</button>${list.length ? `<button class="btn btn-ghost" id="csvClear">목록 비우기</button>` : ""}</div>
+    ${list.length ? `<p>불러온 목록 <b>${list.length}건</b> · 좌표 있는 행 ${list.filter((r) => r.lat && r.lng).length}건 (지도에 자줏빛 점으로 표시)</p>
+      <h4>현재 주소와 일치 (${hits.length})</h4>
+      ${hits.length ? `<table class="tbl"><tr><th>주소</th><th>적발일</th></tr>${hits.slice(0, 30).map((r) => `<tr><td>${esc(r.addr)}</td><td>${esc(r.date)}</td></tr>`).join("")}</table>` : "<p>일치하는 행이 없습니다.</p>"}` : ""}
+    <div class="note">파일은 이 기기 안에서만 읽습니다.</div>`;
+  $("#csvPick").onclick = () => $("#csvIn").click();
+  $("#csvClear") && ($("#csvClear").onclick = () => { S.publicRows = []; S.P.publicMarks = []; render(); sheetPublic(b); });
+}
+
+// 6) 지도에 직접 그리기
+function startDrawing(kind) {
+  if (!mapV) return;
+  if (S.layout === "3d") setLayout("both");
+  $("#viewerPanel").scrollIntoView({ behavior: "smooth" });
+  const label = { parcel: "대지 경계 — 꼭짓점을 3개 이상 차례로 누르세요", building: "건물 외곽 — 꼭짓점을 3개 이상 차례로 누르세요", violation: "위반 위치 — 한 점 또는 꼭짓점 3개 이상" }[kind];
+  S.drawKind = kind;
+  $("#drawBar .draw-on").hidden = false;
+  $$("#drawBar [data-draw=parcel],#drawBar [data-draw=building],#drawBar [data-draw=violation],#drawBar [data-draw=clear]").forEach((x) => (x.hidden = true));
+  $("#drawMsg").textContent = label;
+  mapV.startDraw(kind, (n) => { $("#drawMsg").textContent = `${label} · ${n}점`; });
+  toast(label);
+}
+function endDrawing(save) {
+  const kind = S.drawKind;
+  const pts = save ? mapV.finishDraw() : (mapV.cancelDraw(), []);
+  $("#drawBar .draw-on").hidden = true;
+  $$("#drawBar [data-draw]").forEach((x) => (x.hidden = false));
+  $("#drawBar .draw-on").hidden = true;
+  S.drawKind = null;
+  if (!save) return;
+  const P = S.P;
+  if ((kind === "parcel" || kind === "building") && pts.length < 3) { toast("꼭짓점을 3개 이상 찍어야 합니다"); return; }
+  if (kind === "violation" && !pts.length) return;
+  const closed = (p) => [...p, p[0]];
+  if (kind === "parcel") {
+    P.parcelRing = closed(pts); P.site.dimsManual = false; P.site.setbackManual = false;
+    P.address.lat = pts.reduce((s2, p) => s2 + p[0], 0) / pts.length; P.address.lng = pts.reduce((s2, p) => s2 + p[1], 0) / pts.length;
+    P.sources = [...new Set([...(P.sources || []), "대지 경계 직접 그림"])];
+  } else if (kind === "building") {
+    P.footprintRing = closed(pts); P.site.setbackManual = false;
+    P.sources = [...new Set([...(P.sources || []), "건물 외곽 직접 그림"])];
+  } else {
+    P.violationMarks = [...(P.violationMarks || []), pts.length >= 3 ? closed(pts) : pts.slice(0, 1)];
+  }
+  render(); mapV.fit(); view?.update(S.P, S.R, S.mode); view?.fit();
+  toast("지도·3D·계산에 반영했습니다");
 }
 
 // ───────────────────────── 시트(세부 화면) + 뒤로가기
@@ -170,6 +341,8 @@ const SHEETS = {
   laws: ["근거 법령 (원문 대조)", sheetLaws],
   account: ["💾 내 기록", sheetAccount],
   install: ["휴대폰에 설치하기", sheetInstall],
+  todo: ["확인 · 보완 모아보기", sheetTodo],
+  public: ["위반건축물 공개자료", sheetPublic],
   postcode: ["주소검색 (도로명 · 지번)", sheetPostcode],
 };
 
@@ -189,6 +362,7 @@ function openSheet(id, push = true) {
 }
 function closeSheetUI() {
   if (bigView) { bigView.destroy(); bigView = null; }
+  if (bigView2) { bigView2.destroy(); bigView2 = null; }
   $("#sheet").hidden = true;
   document.body.style.overflow = "";
   sheetOpen = null;
@@ -264,6 +438,7 @@ function sheetView3d(b) {
   b.innerHTML = `
     <div class="big3d-bar">
       <div class="seg o" id="bigSeg"><button data-m="before">전</button><button data-m="current">현황</button><button data-m="after" class="on">후</button></div>
+      <div class="seg" id="bigLayout"><button data-bl="one" class="on">하나</button><button data-bl="pair">전·후 나란히</button></div>
       <div class="seg" id="bigViews"><button data-v="iso" class="on">3D</button><button data-v="top">위</button><button data-v="south">남측</button><button data-v="east">동측</button><button data-v="north">북측</button></div>
     </div>
     <div class="big3d-wrap" id="bigWrap">
@@ -277,15 +452,36 @@ function sheetView3d(b) {
     증축·철거 부분은 위치를 단순화한 상자로 표시합니다. 파란 반투명 면은 개정 건축법 제61조 정북 일조 한계(1.5m·5m·h/2)입니다.</div>`;
   S.bigMode = "after";
   // 화면이 실제로 그려진 다음 크기를 재서 만든다 (배율 어긋남 방지)
+  const build = (pair) => {
+    if (bigView) { bigView.destroy(); bigView = null; }
+    if (bigView2) { bigView2.destroy(); bigView2 = null; }
+    const host = $("#big3d");
+    host.innerHTML = pair ? `<div class="pair"><div id="bigA"><span class="pair-l">BEFORE · 현황</span></div><div id="bigB"><span class="pair-l a">AFTER · 양성화 후</span></div></div>` : "";
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (sheetOpen !== "view3d") return;
+      bigView = createView(pair ? $("#bigA") : host);
+      bigView.setAuto(false); bigView.resize();
+      bigView.update(S.P, S.R, pair ? "current" : S.bigMode); bigView.view("iso");
+      if (pair) {
+        bigView2 = createView($("#bigB"));
+        bigView2.setAuto(false); bigView2.resize();
+        bigView2.update(S.P, S.R, "after"); bigView2.view("iso");
+        // 한쪽을 돌리면 다른 쪽도 같이
+        bigView.onCamera((p, t) => bigView2?.setCam(p, t));
+        bigView2.onCamera((p, t) => bigView?.setCam(p, t));
+      }
+    }));
+  };
+  S.bigPair = false;
   if (bigView) { bigView.destroy(); bigView = null; }
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    if (sheetOpen !== "view3d") return;
-    bigView = createView($("#big3d"));
-    bigView.setAuto(false);
-    bigView.resize();
-    bigView.update(S.P, S.R, "after");
-    bigView.view("iso");
-  }));
+  build(false);
+  $("#bigLayout").onclick = (e) => {
+    const l = e.target.dataset.bl; if (!l) return;
+    $$("#bigLayout button").forEach((x) => x.classList.toggle("on", x === e.target));
+    S.bigPair = l === "pair";
+    $("#bigSeg").style.display = S.bigPair ? "none" : "";
+    build(S.bigPair);
+  };
   $("#bigSeg").onclick = (e) => {
     const m = e.target.dataset.m; if (!m || !bigView) return;
     $$("#bigSeg button").forEach((x) => x.classList.toggle("on", x === e.target));
@@ -294,7 +490,7 @@ function sheetView3d(b) {
   $("#bigViews").onclick = (e) => {
     const v = e.target.dataset.v; if (!v || !bigView) return;
     $$("#bigViews button").forEach((x) => x.classList.toggle("on", x === e.target));
-    bigView.view(v);
+    bigView.view(v); bigView2?.view(v);
   };
   $("#bigWrap .v-tools").onclick = (e) => {
     const z = e.target.dataset.bz; if (!z || !bigView) return;
@@ -302,7 +498,7 @@ function sheetView3d(b) {
     else if (z === "l") bigView.orbit(-30, 0); else if (z === "r") bigView.orbit(30, 0);
     else if (z === "up") bigView.orbit(0, 15); else if (z === "down") bigView.orbit(0, -15);
     else if (z === "fs") toggleFull($("#bigWrap"));
-    else bigView.fit();
+    else { bigView.fit(); bigView2?.fit(); }
   };
 }
 
@@ -488,7 +684,10 @@ async function mergeParsed(res) {
   for (const [k, [g, key]] of Object.entries(map)) if (f[k] != null) P[g][key] = f[k];
   if (f.purpose) P.legal.category = categoryOf(f.purpose);
   if (f.violationMarked) { P.legal.violationMarked = true; P.legal.violationText = f.violationText || "위반건축물"; }
-  P.violationsUnknown = false;
+  // 위반 표기를 못 찾았다고 위반이 없는 것은 아니다 (사진 흐림·다른 쪽·표기 해제 이력 등)
+  P.noMarkDetected = !f.violationMarked && !res.violations.length;
+  P.violationsUnknown = P.noMarkDetected && !P.legal.violationMarked && !(P.violations || []).length;
+  S.upload = { fields: { ...f }, pageOf: res.pageOf || {}, pages: res.pages || [], method: res.method, fileName: res.fileName };
   if (res.violations.length) {
     P.isExample = false;
     P.violations = res.violations.map((v, i) => ({ id: "u" + i + Date.now(), ...v, height: v.type === "roofAdd" ? 2.7 : undefined, units: v.type === "unitSplit" ? 1 : undefined }));
@@ -508,12 +707,38 @@ async function mergeParsed(res) {
   }
 }
 
+// 첨부 대장 값 · 건축HUB 값 · 계산에 쓴 값을 나란히
+function sourceCompareHtml() {
+  const U = S.upload, H = S.hub, P = S.P;
+  if (!U && !H) return "";
+  const rows = [
+    ["대지면적", "siteArea", P.site.area, "㎡"], ["건축면적", "archArea", P.legal.archArea, "㎡"], ["연면적", "totArea", P.legal.totArea, "㎡"],
+    ["용적률산정 연면적", "farArea", P.legal.farArea, "㎡"], ["건폐율", "bcr", null, "%"], ["용적률", "far", null, "%"],
+    ["높이", "height", P.legal.height, "m"], ["지상층수", "floorsAbove", P.legal.floorsAbove, "층"], ["주용도", "purpose", P.legal.purpose, ""],
+  ];
+  const fmt = (v, u) => (v == null || v === "" ? "—" : `${typeof v === "number" || /^[0-9.]+$/.test(v) ? f2(+v) : esc(v)}${u && v !== "" && v != null && !isNaN(+v) ? u : ""}`);
+  const diff = (a, b) => a != null && b != null && a !== "" && b !== "" && !isNaN(+a) && !isNaN(+b) && Math.abs(+a - +b) > 0.05;
+  return `<details class="grp" open><summary>대장 값 출처 비교 <small>${U ? esc(U.fileName || "첨부") : "첨부 없음"} · ${H ? "건축HUB" : "건축HUB 없음"}</small></summary>
+    <div style="padding:0 12px 12px;overflow-x:auto"><table class="tbl src-tbl"><tr><th>항목</th><th>첨부 대장</th><th>건축HUB</th><th>계산에 사용</th></tr>
+    ${rows.map(([lab, k, used, u]) => {
+      const uv = U?.fields?.[k], hv = H?.[k];
+      const pg = U?.pageOf?.[k] ? `<small> (${U.pageOf[k]}쪽)</small>` : "";
+      const d = diff(uv, hv);
+      const usedV = used ?? (k === "bcr" ? S.R?.before?.bcr : k === "far" ? S.R?.before?.far : null);
+      return `<tr class="${d ? "warn" : ""}"><td>${lab}${d ? ' <span class="badge b-warn">차이</span>' : ""}</td><td>${fmt(uv, u)}${uv != null ? pg : ""}</td><td>${fmt(hv, u)}</td><td><b>${fmt(usedV, u)}</b></td></tr>`;
+    }).join("")}</table>
+    <p style="font-size:12px;color:var(--ink-3);margin:6px 0 0">수치는 건축HUB(국토부 구조화 자료)를 우선하고, 위반 표기는 첨부 대장에서 확인합니다. 차이가 있으면 최신 원본 대장으로 확인하세요.</p>
+    ${U?.pages?.length ? `<details style="margin-top:6px"><summary style="font-size:12.5px;font-weight:800;cursor:pointer">쪽별 인식 원문 보기 (${U.pages.length}쪽)</summary>${U.pages.map((t, i) => `<p style="font-size:12px;font-weight:800;margin:8px 0 2px">${i + 1}쪽</p><div class="ocrtext">${esc(t.slice(0, 3000))}</div>`).join("")}</details>` : ""}
+    </div></details>`;
+}
+
 function sheetRegister(b) {
   const P = S.P;
   const zoneOpts = Object.keys(ZONES).map((z) => `<option ${z === P.site.zone ? "selected" : ""}>${z}</option>`).join("");
   const purposeOpts = ["다가구주택", "다세대주택", "단독주택", "다중주택", "제1종근린생활시설", "제2종근린생활시설", "연립주택", "아파트", "기타"].map((p) => `<option ${p === P.legal.purpose ? "selected" : ""}>${p}</option>`).join("");
   b.innerHTML = `
     <p style="font-size:13px">출처: ${(P.sources || []).map(esc).join(" · ") || "-"} ${P.isSample ? '<span class="badge b-warn">샘플 예시 값</span>' : ""}</p>
+    ${sourceCompareHtml()}
     ${S.floors?.length ? `<details><summary style="font-weight:800;cursor:pointer;font-size:13px">층별 개요 (건축HUB) ${S.floors.length}개</summary><table class="tbl">${S.floors.map((x) => `<tr><td>${esc(x.flrNoNm || x.flrNo)}</td><td>${esc(x.mainPurpsCdNm || x.etcPurps)}</td><td>${f2(x.area)}㎡</td></tr>`).join("")}</table></details>` : ""}
     <form id="regForm" style="margin-top:10px">
       <details class="grp" open><summary>판정에 쓰는 값 <small>용도·면적·층수</small></summary><div class="form">
@@ -671,7 +896,10 @@ function sheetIssue(b) {
 function sheetLaws(b) {
   b.innerHTML = `
     <p style="font-size:13px">아래 조문은 국가법령정보센터 원문과 대조했습니다 (확인일 ${LAW_CHECKED_AT}).</p>
-    ${LAW_SOURCES.map((l) => `<div class="law"><b>${esc(l.title)}</b><div>${esc(l.detail)}</div><a href="${l.url}" target="_blank" rel="noopener" style="font-size:12px">원문 보기 ↗</a></div>`).join("")}
+    ${[["확정", "확정 법률 (공포 · 시행 예정)"], ["입법예고", "입법예고 (미확정 — 바뀔 수 있음)"], ["현행", "일반 법령 · 조례 (현행)"]].map(([k, t]) => {
+      const items = LAW_SOURCES.filter((l) => (l.status || "").startsWith(k));
+      return items.length ? `<h4>${t}</h4>${items.map((l) => `<div class="law"><span class="badge ${k === "확정" ? "b-ok" : k === "입법예고" ? "b-warn" : "b-navy"}">${esc(l.status)}</span> <b>${esc(l.title)}</b><div>${esc(l.detail)}</div><a href="${l.url}" target="_blank" rel="noopener" style="font-size:12px">원문 보기 ↗</a></div>`).join("")}` : "";
+    }).join("")}
     <h4>핵심 요약 — 특조법 (법률 제21820호)</h4>
     <ul style="font-size:13.5px;padding-left:18px">
       <li>대상: 2023.12.31 당시 사실상 완공된 <b>주거용(연면적 50% 이상)</b> 특정건축물 — 다세대(세대당 전용 85㎡ 이하), 단독(165㎡ 이하, 조례로 330㎡까지), 다가구(660㎡ 이하), 주택으로 쓰던 근생 (제2조·제3조)</li>
@@ -804,6 +1032,7 @@ function applyLookup(j, params, keepLegal) {
     render(); mapV?.fit(); view?.update(S.P, S.R, S.mode); view?.fit();
     return;
   }
+  if (!keepLegal) { S.hub = null; S.upload = null; }
   const P = keepLegal ? prev : emptyProject();
   const a = j.address || {};
   P.address = { ...P.address, ...a, isSeoul: (a.sigunguCd || "").startsWith("11") };
@@ -815,6 +1044,7 @@ function applyLookup(j, params, keepLegal) {
   const before = fromUpload ? JSON.parse(JSON.stringify(P.legal)) : null;
   const siteBefore = fromUpload ? P.site.area : null;
   if (t) {
+    S.hub = { siteArea: t.platArea, archArea: t.archArea, totArea: t.totArea, farArea: t.vlRatEstmTotArea, bcr: t.bcRat, far: t.vlRat, height: t.heit, floorsAbove: t.grndFlrCnt, floorsBelow: t.ugrndFlrCnt, purpose: [t.mainPurpsCdNm, t.etcPurps].filter(Boolean).join(" / "), structure: t.strctCdNm, useAprDay: t.useAprDay };
     const n = (v) => (v == null || v === "" ? null : parseFloat(v));
     if (n(t.platArea)) P.site.area = n(t.platArea);
     if (n(t.archArea)) P.legal.archArea = n(t.archArea);
@@ -962,11 +1192,13 @@ function bind() {
       else if (a === "pick") startPick();
       else if (a === "upload") openSheet("upload");
       else if (a === "upload-direct") $("#fileIn").click();
+      else if (a === "report") printReport();
       else if (a === "sample") { $("#q").value = SAMPLE_ADDRESS; lookup({ q: SAMPLE_ADDRESS }, { example: true }); }
       else if (a === "example") { applyExample(); if (sheetOpen) back(); }
       else openSheet(a);
     } else if (el.dataset.sheet) {
       if (e.target.closest("#thumbSeg")) return;
+      if (el.dataset.sheet === "report") { printReport(); return; }
       openSheet(el.dataset.sheet);
     } else if (el.dataset.open) {
       e.preventDefault(); history.replaceState({ v: "sheet", id: el.dataset.open }, "", `#${el.dataset.open}`); openSheet(el.dataset.open, false);
@@ -990,6 +1222,23 @@ function bind() {
   $("#sheetBack").onclick = back;
   $("#sheet").addEventListener("click", (e) => { if (e.target.id === "sheet") back(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheetOpen) back(); });
+  $("#drawBar").onclick = (e) => {
+    const d = e.target.closest("[data-draw]")?.dataset.draw; if (!d) return;
+    if (d === "done") endDrawing(true);
+    else if (d === "cancel") endDrawing(false);
+    else if (d === "undo") mapV.undoDraw();
+    else if (d === "clear") { S.P.violationMarks = []; render(); toast("표시한 위반 위치를 지웠습니다"); }
+    else startDrawing(d);
+  };
+  $("#csvIn").onchange = async (e) => {
+    const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    try {
+      S.publicRows = await readCsv(f);
+      S.P.publicMarks = S.publicRows.filter((r) => r.lat && r.lng).slice(0, 3000);
+      render(); if (sheetOpen === "public") sheetPublic($("#sheetBody"));
+      toast(`${S.publicRows.length}건 불러왔습니다`);
+    } catch (err) { toast("CSV를 읽지 못했습니다: " + err.message); }
+  };
   $("#layoutSeg").onclick = (e) => e.target.dataset.l && setLayout(e.target.dataset.l);
   $("#modeSeg").onclick = (e) => e.target.dataset.m && setMode(e.target.dataset.m);
   $("#thumbSeg").onclick = (e) => {
