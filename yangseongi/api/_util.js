@@ -1,7 +1,7 @@
 // Shared helpers for data.go.kr (공공데이터포털) proxy functions.
 // The service key lives ONLY here, server-side — never sent to the browser.
 // 환경변수 DATA_GO_KR_KEY 가 있으면 우선 사용한다 (Vercel 프로젝트 설정 → Environment Variables).
-const SERVICE_KEY = process.env.DATA_GO_KR_KEY || "7f6c358454733828dd692a66ac6b5d26c322e39bfee17bc6584fc9330276db1f";
+const SERVICE_KEY = process.env.DATA_GO_KR_KEY || ""; // Vercel 환경변수에만 둔다 (소스에 키를 쓰지 않음)
 
 function decodeEntities(s) {
   if (!s) return s;
@@ -60,6 +60,7 @@ async function fetchOnce(url, timeoutMs) {
 }
 
 async function fetchDataGoKr(baseUrl, params) {
+  if (!SERVICE_KEY) return { ok: false, status: 500, error: "서버에 공공데이터 키(DATA_GO_KR_KEY)가 설정되지 않았습니다." };
   const qs = new URLSearchParams({ serviceKey: SERVICE_KEY, ...params });
   const url = `${baseUrl}?${qs.toString()}`;
 
@@ -92,4 +93,4 @@ function sendJson(res, status, payload) {
   res.status(status).send(JSON.stringify(payload));
 }
 
-module.exports = { fetchDataGoKr, sendJson, decodeEntities, SERVICE_KEY };
+module.exports = { fetchDataGoKr, sendJson, decodeEntities };

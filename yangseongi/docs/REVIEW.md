@@ -153,7 +153,7 @@ const targetStatus = !isViolation ? "none" : !isTarget || legalOverCap ? "no" : 
 ## 7. 남은 문제
 
 ### 보안
-1. **공공데이터포털 서비스 키가 소스에 하드코딩되어 커밋됨**: `realestate-app/api/_util.js`, `yangseongi/api/_util.js`의 기본값. 키를 재발급하고, 환경변수 `DATA_GO_KR_KEY`만 쓰도록 기본값을 지울 것. 이미 git 기록에 남아 있다.
+1. **공공데이터포털 서비스 키가 과거 커밋에 남아 있음**: `yangseongi/api/_util.js`에서는 제거하고 Vercel 환경변수 `DATA_GO_KR_KEY`만 사용. `realestate-app/api/_util.js`에는 아직 기본값이 있음(그 앱의 배포 위치 확인 후 제거). 키는 계정 단위라 재발급 시 모든 프로그램을 바꿔야 하므로 일정을 잡아 일괄 교체 권장.
 2. `/api/ys-lookup`·`/api/ys-config`에 사용량 제한·출처 제한이 없다(Vercel Firewall 규칙 권장). 호출 절약: 성공 응답은 Vercel CDN에 하루 캐시(`s-maxage=86400, stale-while-revalidate=604800`), 필지별 인스턴스 메모리 캐시 6시간, 건축HUB는 표제부 1회 + 필요할 때만 추가 호출(보통 조회당 1~2회).
 3. 브이월드 지도 키는 설계상 브라우저에 공개된다(도메인 제한 전제).
 4. 서버 함수의 `VW_DOMAIN`과 `vwErrors`가 모듈 전역 변수라, 같은 인스턴스에서 동시 요청이 오면 섞일 수 있다. 요청 단위 변수로 바꿔야 한다.

@@ -11,7 +11,7 @@ module.exports = (req, res) => {
       supabaseUrl: process.env.SUPABASE_URL || null,
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY || null,
       lookup: {
-        buildingHub: true,
+        buildingHub: !!process.env.DATA_GO_KR_KEY, // 키 값이 아니라 설정 여부만
         vworld: !!process.env.VWORLD_KEY,
         kakao: !!process.env.KAKAO_REST_KEY,
         juso: !!process.env.JUSO_KEY,
